@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none';">
   <meta name="referrer" content="no-referrer">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-  <meta name="theme-color" content="#2563eb">
   <title>セキュア家計簿（外部通信ゼロ・高機能版）</title>
   <style>
     :root {
@@ -768,17 +765,17 @@
     <!-- Top Header -->
     <header class="app-header">
       <div class="brand-area">
-        <h1 class="brand-title">?? セキュア家計簿</h1>
+        <h1 class="brand-title">🧾 セキュア家計簿</h1>
         <span class="security-badge" title="外部通信・CDN・外部スクリプトを一切使用しないオフライン完結設計です">
-          ?? 完全オフライン・通信ゼロ
+          🔒 完全オフライン・通信ゼロ
         </span>
       </div>
 
       <div class="month-controller">
         <label for="currentMonth">対象月:</label>
-        <button type="button" class="icon-btn" id="prevMonthBtn" title="前月">?</button>
+        <button type="button" class="icon-btn" id="prevMonthBtn" title="前月">◀</button>
         <input type="month" id="currentMonth">
-        <button type="button" class="icon-btn" id="nextMonthBtn" title="翌月">?</button>
+        <button type="button" class="icon-btn" id="nextMonthBtn" title="翌月">▶</button>
       </div>
     </header>
 
@@ -787,14 +784,14 @@
       <!-- Left: Entry Form -->
       <aside class="card">
         <div class="card-header">
-          <h2 class="card-title" id="formTitle">?? 購入商品の登録</h2>
+          <h2 class="card-title" id="formTitle">📝 購入商品の登録</h2>
           <button type="button" class="btn btn-secondary btn-sm" id="cancelEditBtn" style="display:none;">編集キャンセル</button>
         </div>
 
         <!-- Receipt Image Preview (Local Only, Zero Network) -->
         <div class="receipt-box" id="receiptDropBox">
           <div class="receipt-toolbar">
-            <label for="receiptFileInput" class="btn btn-secondary btn-sm" style="cursor:pointer;">?? レシート画像を表示</label>
+            <label for="receiptFileInput" class="btn btn-secondary btn-sm" style="cursor:pointer;">📷 レシート画像を表示</label>
             <input type="file" id="receiptFileInput" accept="image/*" style="display:none;">
             <div class="receipt-zoom-group" id="receiptZoomControls" style="display:none;">
               <button type="button" class="chip-btn" data-zoom="100">1x</button>
@@ -902,28 +899,28 @@
       <!-- Right: Analytics, History & Settings -->
       <main class="card">
         <div class="tab-bar" role="tablist">
-          <button type="button" class="tab-btn active" data-tab="tab-tree">?? 分類ツリー集計</button>
-          <button type="button" class="tab-btn" data-tab="tab-store">?? 購入先別集計</button>
-          <button type="button" class="tab-btn" data-tab="tab-payment">?? 支払方法別集計</button>
-          <button type="button" class="tab-btn" data-tab="tab-history">?? 購入履歴一覧</button>
-          <button type="button" class="tab-btn" data-tab="tab-settings">?? マスタ・データ管理</button>
+          <button type="button" class="tab-btn active" data-tab="tab-tree">🌳 分類ツリー集計</button>
+          <button type="button" class="tab-btn" data-tab="tab-store">🏪 購入先別集計</button>
+          <button type="button" class="tab-btn" data-tab="tab-payment">💳 支払方法別集計</button>
+          <button type="button" class="tab-btn" data-tab="tab-history">🧾 購入履歴一覧</button>
+          <button type="button" class="tab-btn" data-tab="tab-settings">⚙️ マスタ・データ管理</button>
         </div>
 
         <!-- Summary Banner (Shown on Analytics Tabs) -->
         <div class="summary-grid" id="summaryGrid">
           <div class="stat-box">
             <div class="stat-label" id="statMonthLabel">当月合計支出</div>
-            <div class="stat-value" id="statTotalAmount">\0</div>
+            <div class="stat-value" id="statTotalAmount">¥0</div>
             <div class="stat-sub" id="statTxCount">登録件数: 0件</div>
           </div>
           <div class="stat-box">
             <div class="stat-label">最多支出の大分類</div>
-            <div class="stat-value" id="statTopCat" style="font-size:18px;">?</div>
+            <div class="stat-value" id="statTopCat" style="font-size:18px;">—</div>
             <div class="stat-sub" id="statTopCatSub">データなし</div>
           </div>
           <div class="stat-box">
             <div class="stat-label">最多利用の購入先</div>
-            <div class="stat-value" id="statTopStore" style="font-size:18px;">?</div>
+            <div class="stat-value" id="statTopStore" style="font-size:18px;">—</div>
             <div class="stat-sub" id="statTopStoreSub">データなし</div>
           </div>
         </div>
@@ -1065,10 +1062,10 @@
               データはブラウザの <code>localStorage</code> に保存されます。端末変更やブラウザデータ消去に備え、定期的なJSONバックアップをおすすめします。
             </p>
             <div class="io-actions">
-              <button type="button" class="btn btn-secondary btn-sm" id="exportCsvBtn">?? 当月データをCSV出力</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="exportJsonBtn">?? 全データJSONバックアップ</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="exportCsvBtn">📄 当月データをCSV出力</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="exportJsonBtn">⬇️ 全データJSONバックアップ</button>
               <label class="btn btn-secondary btn-sm" style="cursor:pointer;">
-                ?? JSON復元
+                ⬆️ JSON復元
                 <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none;">
               </label>
               <button type="button" class="btn btn-danger-outline btn-sm" id="resetDemoBtn">初期サンプルに戻す</button>
@@ -1235,7 +1232,7 @@
       }
 
       function formatCurrency(amount) {
-        return "\" + Number(amount || 0).toLocaleString("ja-JP");
+        return "¥" + Number(amount || 0).toLocaleString("ja-JP");
       }
 
       function showToast(message) {
@@ -1376,7 +1373,7 @@
 
       function loadReceiptFile(file) {
         if (!file || !file.type || !file.type.startsWith("image/")) {
-          showToast("?? 画像ファイルを選択してください");
+          showToast("⚠️ 画像ファイルを選択してください");
           return;
         }
         if (receiptObjectUrl) {
@@ -1413,7 +1410,7 @@
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } catch (err) {
-          showToast("?? 保存領域の容量上限に達しました");
+          showToast("⚠️ 保存領域の容量上限に達しました");
         }
       }
 
@@ -1629,7 +1626,7 @@
           document.getElementById("statTopCat").textContent = topCat;
           document.getElementById("statTopCatSub").textContent = formatCurrency(catTotals[topCat]) + " (" + ((catTotals[topCat] / total) * 100).toFixed(1) + "%)";
         } else {
-          document.getElementById("statTopCat").textContent = "?";
+          document.getElementById("statTopCat").textContent = "—";
           document.getElementById("statTopCatSub").textContent = "データなし";
         }
 
@@ -1638,7 +1635,7 @@
           document.getElementById("statTopStore").textContent = topStore;
           document.getElementById("statTopStoreSub").textContent = formatCurrency(storeTotals[topStore]) + " (" + ((storeTotals[topStore] / total) * 100).toFixed(1) + "%)";
         } else {
-          document.getElementById("statTopStore").textContent = "?";
+          document.getElementById("statTopStore").textContent = "—";
           document.getElementById("statTopStoreSub").textContent = "データなし";
         }
       }
@@ -1685,7 +1682,7 @@
           const isOpen1 = expandedL1.has(c1);
 
           const header1 = createEl("div", { className: "tree-header-l1" }, [
-            createEl("span", { textContent: (isOpen1 ? "▼ " : "? ") + c1 + " (" + data1.count + "件)" }),
+            createEl("span", { textContent: (isOpen1 ? "▼ " : "▶ ") + c1 + " (" + data1.count + "件)" }),
             createEl("span", { style: "font-variant-numeric:tabular-nums;", textContent: formatCurrency(data1.total) + "  [" + pct1 + "%]" })
           ]);
 
@@ -1704,7 +1701,7 @@
 
             const node2 = createEl("div", { className: "tree-node-l2" });
             const header2 = createEl("div", { className: "tree-header-l2" }, [
-              createEl("span", { textContent: (isOpen2 ? "? " : "? ") + c2 + " (" + data2.count + "件)" }),
+              createEl("span", { textContent: (isOpen2 ? "▾ " : "▸ ") + c2 + " (" + data2.count + "件)" }),
               createEl("span", { style: "font-variant-numeric:tabular-nums;", textContent: formatCurrency(data2.total) })
             ]);
 
@@ -1843,8 +1840,8 @@
         }
 
         document.getElementById("expMemo").value = exp.memo || "";
-        document.getElementById("formTitle").textContent = "?? 購入明細の編集";
-        document.getElementById("submitBtn").textContent = "? 変更を保存する";
+        document.getElementById("formTitle").textContent = "✏️ 購入明細の編集";
+        document.getElementById("submitBtn").textContent = "✔ 変更を保存する";
         document.getElementById("cancelEditBtn").style.display = "inline-flex";
         showToast("編集モードに切り替えました");
       }
@@ -1854,7 +1851,7 @@
         document.getElementById("expAmount").value = "";
         document.getElementById("expItem").value = "";
         document.getElementById("expMemo").value = "";
-        document.getElementById("formTitle").textContent = "?? 購入商品の登録";
+        document.getElementById("formTitle").textContent = "📝 購入商品の登録";
         document.getElementById("submitBtn").textContent = "＋ 家計簿に登録する";
         document.getElementById("cancelEditBtn").style.display = "none";
       }
@@ -1966,7 +1963,7 @@
           });
           delBtn.addEventListener("click", function () {
             if (state.payments.length <= 1) {
-              showToast("?? 支払方法は最低1つ必要です");
+              showToast("⚠️ 支払方法は最低1つ必要です");
               return;
             }
             state.payments = state.payments.filter(function (x) { return x !== py; });
@@ -2012,7 +2009,7 @@
       function exportMonthCsv() {
         const list = getFilteredMonthExpenses();
         if (list.length === 0) {
-          showToast("?? 出力対象のデータがありません");
+          showToast("⚠️ 出力対象のデータがありません");
           return;
         }
         const ym = getSelectedMonth();
@@ -2061,15 +2058,15 @@
             const parsed = JSON.parse(String(reader.result));
             const validated = validateAndSanitizeState(parsed);
             if (!validated) {
-              showToast("?? 有効な家計簿JSONデータではありません");
+              showToast("⚠️ 有効な家計簿JSONデータではありません");
               return;
             }
             state = validated;
             saveState();
             renderAll();
-            showToast("? JSONバックアップから復元しました");
+            showToast("✔ JSONバックアップから復元しました");
           } catch (err) {
-            showToast("?? JSONファイルの読み込みに失敗しました");
+            showToast("⚠️ JSONファイルの読み込みに失敗しました");
           }
         };
         reader.readAsText(file);
@@ -2166,27 +2163,27 @@
           const memo = sanitizeString(document.getElementById("expMemo").value, 120);
 
           if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-            showToast("?? 有効な購入日を入力してください");
+            showToast("⚠️ 有効な購入日を入力してください");
             return;
           }
           if (!Number.isFinite(amount) || amount < 1 || amount > 100000000) {
-            showToast("?? 金額は1円?1億円の範囲で入力してください");
+            showToast("⚠️ 金額は1円〜1億円の範囲で入力してください");
             return;
           }
           if (!item) {
-            showToast("?? 購入した商品名を入力してください");
+            showToast("⚠️ 購入した商品名を入力してください");
             return;
           }
           if (!store) {
-            showToast("?? 購入先を入力してください");
+            showToast("⚠️ 購入先を入力してください");
             return;
           }
           if (!payment) {
-            showToast("?? 支払方法を選択してください");
+            showToast("⚠️ 支払方法を選択してください");
             return;
           }
           if (!cat1 || !cat2 || !cat3) {
-            showToast("?? 大・中・小分類を選択してください");
+            showToast("⚠️ 大・中・小分類を選択してください");
             return;
           }
 
@@ -2208,7 +2205,7 @@
               };
             }
             cancelEditExpense();
-            showToast("? 購入明細を更新しました");
+            showToast("✔ 購入明細を更新しました");
           } else {
             state.expenses.push({
               id: "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
@@ -2225,7 +2222,7 @@
             document.getElementById("expAmount").value = "";
             document.getElementById("expItem").value = "";
             document.getElementById("expMemo").value = "";
-            showToast("? 家計簿に登録しました");
+            showToast("✔ 家計簿に登録しました");
           }
 
           const entryYm = date.slice(0, 7);
@@ -2298,7 +2295,7 @@
           const c3 = sanitizeString(document.getElementById("newCat3").value, 30);
 
           if (!c1 || !c2 || !c3 || FORBIDDEN_KEYS.has(c1) || FORBIDDEN_KEYS.has(c2) || FORBIDDEN_KEYS.has(c3)) {
-            showToast("?? 大分類・中分類・小分類をすべて入力してください");
+            showToast("⚠️ 大分類・中分類・小分類をすべて入力してください");
             return;
           }
 
@@ -2329,7 +2326,7 @@
           if (file) {
             importJsonBackup(file);
             ev.target.value = "";
-          }  
+          }
         });
 
         document.getElementById("resetDemoBtn").addEventListener("click", function () {
@@ -2340,15 +2337,6 @@
             showToast("初期サンプルデータに戻しました");
           }
         });
-
-	/* sw.js 登録を追加 */
-
-        if ("serviceWorker" in navigator) {
-          window.addEventListener("load", function () {
-          navigator.serviceWorker.register("./sw.js").catch(function () {});
-          });
-        }
-
       });
     })();
   </script>
