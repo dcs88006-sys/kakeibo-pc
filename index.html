@@ -1,729 +1,2846 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: 'unsafe-inline'; connect-src 'none'; img-src 'self' data: blob:;" />
-  <title>家計簿（PC版）</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スマート家計簿 Pro - 3階層分類＆レシート読込対応</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Tesseract.js (ブラウザ内OCRエンジン) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      --bg: #f4f6f9;
-      --surface: #ffffff;
-      --surface-alt: #f8fafc;
-      --text: #1e293b;
-      --muted: #64748b;
-      --border: #cbd5e1;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --danger: #dc2626;
-      --danger-hover: #b91c1c;
-      --radius: 10px;
-      --shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-
-    * {
-      box-sizing: border-box;
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
     }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
     }
-
-    header.app-header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 20;
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
-
-    .app-title {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
-
-    .header-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    button, .btn {
-      appearance: none;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      border-radius: 8px;
-      padding: 7px 12px;
-      font-size: 0.88rem;
+    .tab-active {
+      border-bottom: 2px solid #2563eb;
+      color: #2563eb;
       font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, border-color 0.15s ease;
-    }
-
-    button:hover, .btn:hover {
-      background: var(--surface-alt);
-    }
-
-    button.primary {
-      background: var(--primary);
-      border-color: var(--primary);
-      color: #ffffff;
-    }
-
-    button.primary:hover {
-      background: var(--primary-hover);
-    }
-
-    button.danger {
-      background: var(--danger);
-      border-color: var(--danger);
-      color: #ffffff;
-    }
-
-    button.danger:hover {
-      background: var(--danger-hover);
-    }
-
-    /* PC向け2カラム：左に明細・集計、右に購入商品登録欄 */
-    .workspace {
-      max-width: 1380px;
-      margin: 20px auto;
-      padding: 0 24px 32px;
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(360px, 1fr);
-      gap: 22px;
-      align-items: start;
-    }
-
-    @media (max-width: 960px) {
-      .workspace {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 18px 20px;
-    }
-
-    /* 右側：購入商品登録欄をPC画面で追従・右配置 */
-    .entry-column {
-      order: 2;
-      position: sticky;
-      top: 74px;
-    }
-
-    .history-column {
-      order: 1;
-    }
-
-    @media (max-width: 960px) {
-      .entry-column {
-        order: 1;
-        position: static;
-      }
-      .history-column {
-        order: 2;
-      }
-    }
-
-    .panel-title {
-      margin: 0 0 14px;
-      font-size: 1rem;
-      font-weight: 700;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .form-group.full {
-      grid-column: 1 / -1;
-    }
-
-    label {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.92rem;
-      color: var(--text);
-      background: var(--surface);
-    }
-
-    input:focus, select:focus {
-      outline: 2px solid rgba(37, 99, 235, 0.25);
-      border-color: var(--primary);
-    }
-
-    /* レシート読込み・プレビューエリア */
-    .receipt-box {
-      margin-top: 14px;
-      padding: 12px;
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      background: var(--surface-alt);
-    }
-
-    .receipt-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .receipt-controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .zoom-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      min-width: 44px;
-      text-align: center;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .receipt-viewport {
-      width: 100%;
-      height: 240px;
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .receipt-placeholder {
-      color: var(--muted);
-      font-size: 0.85rem;
-      text-align: center;
-      padding: 16px;
-    }
-
-    .receipt-preview-img {
-      transform-origin: center center;
-      transition: transform 0.12s ease;
-      max-width: none;
-      display: block;
-    }
-
-    .form-actions {
-      margin-top: 14px;
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-
-    /* 集計と明細リスト */
-    .summary-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-bottom: 14px;
-      padding: 12px 14px;
-      background: var(--surface-alt);
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .summary-item {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .summary-label {
-      font-size: 0.78rem;
-      color: var(--muted);
-    }
-
-    .summary-value {
-      font-size: 1.15rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.88rem;
-    }
-
-    th, td {
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    th {
-      background: var(--surface-alt);
-      color: var(--muted);
-      font-weight: 600;
-      white-space: nowrap;
-    }
-
-    td.num, th.num {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      background: #e0e7ff;
-      color: #1e40af;
-      font-weight: 600;
-    }
-
-    .thumb-btn {
-      padding: 2px 6px;
-      font-size: 0.78rem;
-    }
-
-    .empty-msg {
-      text-align: center;
-      color: var(--muted);
-      padding: 28px 12px;
-      font-size: 0.9rem;
     }
   </style>
 </head>
-<body>
-  <header class="app-header">
-    <h1 class="app-title">家計簿（PC版）</h1>
-    <div class="header-actions">
-      <button type="button" id="exportJsonBtn">JSONバックアップ</button>
-      <label class="btn" for="importJsonInput">JSON読込</label>
-      <input type="file" id="importJsonInput" accept="application/json,.json" hidden />
+<body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-brand-100 selection:text-brand-700">
+
+  <!-- 通知トーストコンテナ -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- 確認ダイアログモーダル (confirm()の代替) -->
+  <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+      <div class="flex items-center gap-3 text-amber-600 mb-3">
+        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+        <h3 id="confirm-title" class="text-lg font-bold text-slate-800">確認</h3>
+      </div>
+      <p id="confirm-message" class="text-sm text-slate-600 mb-6 leading-relaxed"></p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel-btn" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">キャンセル</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 transition">実行する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ヘッダーナビゲーション -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
+    <div class="max-w-[1600px] mx-auto px-4 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center shadow-xs">
+          <i class="fa-solid fa-wallet text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-800 tracking-tight leading-none">スマート家計簿 Pro</h1>
+          <p class="text-[11px] text-slate-500 mt-0.5 hidden sm:block">大・中・小3階層分類 / レシートOCR読込 / 自動ローカル保存</p>
+        </div>
+      </div>
+
+      <!-- アクションボタン群 -->
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openMasterModal('categories')" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-sliders text-brand-600"></i>
+          <span>マスタ管理<span class="hidden md:inline">（分類・店舗・支払）</span></span>
+        </button>
+
+        <div id="data-menu-container" class="relative">
+          <button type="button" id="data-menu-btn" onclick="toggleDataMenu(event)" class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-database text-emerald-600"></i>
+            <span class="hidden sm:inline">データ管理</span>
+            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+          </button>
+          <div id="data-menu-dropdown" class="absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 hidden z-40">
+            <button type="button" onclick="exportCSV(); closeDataMenu();" class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+              <i class="fa-solid fa-file-csv text-emerald-600 w-4"></i> CSV形式でダウンロード
+            </button>
+            <button type="button" onclick="exportJSON(); closeDataMenu();" class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+              <i class="fa-solid fa-download text-brand-600 w-4"></i> バックアップ保存 (JSON)
+            </button>
+            <label class="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-upload text-amber-600 w-4"></i> バックアップ復元 (JSON)
+              <input type="file" id="json-import-input" accept=".json" class="hidden" onchange="importJSON(event); closeDataMenu();">
+            </label>
+            <div class="border-t border-slate-100 my-1"></div>
+            <button type="button" onclick="resetToSampleData(); closeDataMenu();" class="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 flex items-center gap-2">
+              <i class="fa-solid fa-rotate-left text-slate-500 w-4"></i> サンプルデータ再投入
+            </button>
+            <button type="button" onclick="clearAllData(); closeDataMenu();" class="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2">
+              <i class="fa-solid fa-trash-can text-rose-600 w-4"></i> 全データ初期化
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
-  <main class="workspace">
-    <!-- 左側：集計・購入履歴 -->
-    <section class="panel history-column" aria-label="購入履歴と集計">
-      <h2 class="panel-title">
-        <span>購入履歴</span>
-        <span id="itemCountLabel" style="font-size: 0.85rem; color: var(--muted); font-weight: 500;">0件</span>
-      </h2>
+  <!-- メイン2カラムレイアウト (PC: 左62% / 右38%) -->
+  <main class="max-w-[1600px] mx-auto p-3 sm:p-4 lg:p-5">
+    <div class="flex flex-col lg:flex-row gap-5 items-start">
 
-      <div class="summary-bar">
-        <div class="summary-item">
-          <span class="summary-label">合計金額</span>
-          <span class="summary-value" id="totalAmountLabel">¥0</span>
-        </div>
-        <div class="summary-item">
-          <span class="summary-label">今月の合計</span>
-          <span class="summary-value" id="monthAmountLabel">¥0</span>
-        </div>
-      </div>
+      <!-- =========================================================
+           左側：メインエリア（月次集計ダッシュボード＆購入履歴） 約62%
+           ========================================================= -->
+      <section class="w-full lg:w-[62%] flex flex-col gap-5">
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>日付</th>
-              <th>商品名</th>
-              <th>カテゴリ</th>
-              <th class="num">金額</th>
-              <th>レシート</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="historyBody">
-            <tr>
-              <td colspan="6" class="empty-msg">まだ購入商品が登録されていません。右側の登録欄から追加してください。</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+        <!-- 月次切り替え＆サマリーバー -->
+        <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <!-- 年月セレクター -->
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="changeMonth(-1)" class="w-9 h-9 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition" title="前月">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                <i class="fa-regular fa-calendar text-brand-600"></i>
+                <input type="month" id="current-month-picker" onchange="onMonthPickerChange(this.value)" class="bg-transparent font-bold text-base text-slate-800 focus:outline-none cursor-pointer">
+              </div>
+              <button type="button" onclick="changeMonth(1)" class="w-9 h-9 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition" title="翌月">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <button type="button" onclick="setTodayMonth()" class="px-2.5 py-1.5 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition">
+                今月
+              </button>
+            </div>
 
-    <!-- 右側：購入商品の登録欄＆レシート読込み -->
-    <aside class="panel entry-column" aria-label="購入商品の登録">
-      <h2 class="panel-title">購入商品の登録</h2>
-
-      <form id="purchaseForm">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="purchaseDate">購入日</label>
-            <input type="date" id="purchaseDate" required />
-          </div>
-
-          <div class="form-group">
-            <label for="purchaseCategory">カテゴリ</label>
-            <select id="purchaseCategory">
-              <option value="食費">食費</option>
-              <option value="日用品">日用品</option>
-              <option value="交通・移動">交通・移動</option>
-              <option value="医療・健康">医療・健康</option>
-              <option value="その他">その他</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="itemName">購入商品名</label>
-            <input type="text" id="itemName" placeholder="例：牛乳・食パン" required />
-          </div>
-
-          <div class="form-group">
-            <label for="itemAmount">金額（円）</label>
-            <input type="number" id="itemAmount" min="0" step="1" placeholder="例：580" required />
-          </div>
-
-          <div class="form-group full">
-            <label for="itemMemo">メモ（任意）</label>
-            <input type="text" id="itemMemo" placeholder="店舗名や備考など" />
+            <!-- 月間KPIサマリー -->
+            <div class="flex items-center gap-4 sm:gap-6">
+              <div>
+                <div class="text-[11px] text-slate-500 font-medium">月間支出合計</div>
+                <div id="kpi-total-amount" class="text-xl sm:text-2xl font-bold text-slate-900">¥0</div>
+              </div>
+              <div class="h-8 w-px bg-slate-200"></div>
+              <div>
+                <div class="text-[11px] text-slate-500 font-medium">レシート件数 / 明細数</div>
+                <div class="text-sm sm:text-base font-semibold text-slate-700">
+                  <span id="kpi-receipt-count">0</span>件 <span class="text-xs text-slate-400 font-normal">(<span id="kpi-item-count">0</span>品目)</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- レシート読込み・プレビュー・拡大縮小・クリア -->
-        <div class="receipt-box">
-          <div class="receipt-header">
-            <label for="receiptInput" style="margin: 0;">レシート画像読込み</label>
-            <div class="receipt-controls">
-              <button type="button" id="zoomOutBtn" title="縮小">－</button>
-              <span class="zoom-label" id="zoomLabel">100%</span>
-              <button type="button" id="zoomInBtn" title="拡大">＋</button>
-              <button type="button" id="zoomResetBtn" title="倍率リセット">リセット</button>
-              <button type="button" id="clearReceiptBtn" title="レシート画像をクリア">クリア</button>
+        <!-- 3階層集計パネル（大分類 ＞ 中分類 ＞ 小分類） -->
+        <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-sitemap text-brand-600"></i>
+              <h2 class="font-bold text-sm sm:text-base text-slate-800">月間カテゴリー別集計（大分類 ＞ 中分類 ＞ 小分類）</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="expandAllCategories(true)" class="text-xs text-slate-600 hover:text-brand-600 px-2 py-1 rounded hover:bg-slate-200/60 transition">
+                <i class="fa-solid fa-angles-down mr-1"></i>すべて展開
+              </button>
+              <button type="button" onclick="expandAllCategories(false)" class="text-xs text-slate-600 hover:text-brand-600 px-2 py-1 rounded hover:bg-slate-200/60 transition">
+                <i class="fa-solid fa-angles-up mr-1"></i>すべて折りたたむ
+              </button>
             </div>
           </div>
 
-          <input type="file" id="receiptInput" accept="image/*" style="margin-bottom: 10px; font-size: 0.85rem;" />
-
-          <div class="receipt-viewport" id="receiptViewport">
-            <div class="receipt-placeholder" id="receiptPlaceholder">
-              レシート画像を選択するとプレビューが表示されます。<br />
-              （＋／－ ボタンで拡大・縮小できます）
+          <div class="p-4 grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+            <!-- 左：階層アコーディオン集計テーブル (7カラム) -->
+            <div class="xl:col-span-7">
+              <div id="category-hierarchy-container" class="space-y-2">
+                <!-- JSで動的に描画 -->
+              </div>
             </div>
-            <img id="receiptPreviewImg" class="receipt-preview-img" alt="レシートプレビュー" style="display: none;" />
+
+            <!-- 右：大分類ドーナツグラフ＆支払方法別集計 (5カラム) -->
+            <div class="xl:col-span-5 flex flex-col gap-4">
+              <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
+                <h3 class="text-xs font-bold text-slate-600 mb-2 flex items-center justify-between">
+                  <span>大分類 構成比グラフ</span>
+                  <span class="text-[11px] font-normal text-slate-400">クリックで詳細確認</span>
+                </h3>
+                <div class="relative h-48 w-full flex items-center justify-center">
+                  <canvas id="category-chart"></canvas>
+                  <div id="chart-empty-msg" class="hidden text-xs text-slate-400">この月のデータはありません</div>
+                </div>
+              </div>
+
+              <!-- 支払方法別集計 -->
+              <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
+                <h3 class="text-xs font-bold text-slate-600 mb-2.5 flex items-center gap-1.5">
+                  <i class="fa-regular fa-credit-card text-brand-600"></i> 支払方法別 集計
+                </h3>
+                <div id="payment-summary-container" class="space-y-2">
+                  <!-- JSで動的に描画 -->
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="form-actions">
-          <button type="reset" id="resetFormBtn">入力クリア</button>
-          <button type="submit" class="primary">登録する</button>
+        <!-- 購入履歴一覧（レシート単位 / 明細検索・絞り込み） -->
+        <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-receipt text-brand-600"></i>
+              <h2 class="font-bold text-sm sm:text-base text-slate-800">購入履歴一覧</h2>
+              <span id="history-count-badge" class="text-xs bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">0件</span>
+            </div>
+
+            <!-- フィルター・検索バー -->
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-2.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="filter-keyword" oninput="renderHistory()" placeholder="商品名・店舗名で検索..." class="pl-7 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500 w-40 sm:w-48">
+              </div>
+              <select id="filter-major-cat" onchange="renderHistory()" class="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+                <option value="">すべての大分類</option>
+              </select>
+              <select id="filter-payment" onchange="renderHistory()" class="px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+                <option value="">すべての支払方法</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="receipt-history-list" class="divide-y divide-slate-200 max-h-[650px] overflow-y-auto">
+            <!-- JSで動的に描画 -->
+          </div>
         </div>
-      </form>
-    </aside>
+
+      </section>
+
+      <!-- =========================================================
+           右側：固定パネル（1回の購入の登録・レシート読込） 約38%
+           ========================================================= -->
+      <aside class="w-full lg:w-[38%] lg:sticky lg:top-[72px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+        <!-- パネルヘッダー -->
+        <div id="entry-panel-header" class="px-4 py-3 bg-brand-600 text-white flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-cart-plus text-lg"></i>
+            <h2 id="entry-panel-title" class="font-bold text-base">1回の購入を登録</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="editing-badge" class="hidden text-[11px] bg-amber-400 text-slate-900 font-bold px-2 py-0.5 rounded-full">編集中</span>
+            <button type="button" onclick="resetReceiptForm()" class="text-xs bg-white/15 hover:bg-white/25 text-white px-2.5 py-1 rounded-lg transition">
+              新規クリア
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4 max-h-[calc(100vh-135px)] overflow-y-auto space-y-4">
+
+          <!-- レシート読込みアコーディオン / エリア -->
+          <div class="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden">
+            <button type="button" onclick="toggleReceiptReader()" class="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-slate-100/80 transition">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-camera"></i>
+                </span>
+                <div>
+                  <div class="text-xs font-bold text-slate-800">レシート読込み・自動入力（OCR / テキスト解析）</div>
+                  <div class="text-[10px] text-slate-500">画像アップロードまたは明細テキスト貼付で自動明細化</div>
+                </div>
+              </div>
+              <i id="receipt-reader-chevron" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform"></i>
+            </button>
+
+            <div id="receipt-reader-body" class="hidden px-3.5 pb-3.5 pt-1 border-t border-slate-200/80 space-y-3">
+              <!-- 画像アップロード＆Webカメラ起動ボタン -->
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="document.getElementById('receipt-image-input').click()" class="py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
+                  <i class="fa-solid fa-folder-open text-brand-600"></i>
+                  <span>画像ファイル選択</span>
+                </button>
+                <button type="button" id="start-camera-btn" onclick="startReceiptCamera()" class="py-2 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
+                  <i class="fa-solid fa-camera"></i>
+                  <span>カメラで撮影</span>
+                </button>
+              </div>
+
+              <!-- Webカメラ ライブプレビュー＆撮影エリア -->
+              <div id="camera-capture-box" class="hidden bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-inner">
+                <div class="relative aspect-4/3 bg-black flex items-center justify-center overflow-hidden">
+                  <video id="camera-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                  <!-- レシート位置合わせガイド枠オーバーレイ -->
+                  <div class="absolute inset-4 border-2 border-dashed border-emerald-400/80 rounded-lg pointer-events-none flex flex-col justify-between p-2">
+                    <span class="self-start bg-black/60 text-emerald-300 text-[10px] font-medium px-2 py-0.5 rounded">
+                      レシートの枠を合わせてください
+                    </span>
+                    <span class="self-end bg-black/60 text-white/80 text-[10px] px-2 py-0.5 rounded">
+                      明るい場所で水平に撮影
+                    </span>
+                  </div>
+                  <!-- カメラ切り替えボタン（複数カメラ搭載端末向け） -->
+                  <button type="button" id="switch-camera-btn" onclick="switchReceiptCamera()" class="hidden absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs flex items-center justify-center transition" title="カメラ切替">
+                    <i class="fa-solid fa-camera-rotate"></i>
+                  </button>
+                </div>
+                <!-- シャッター＆閉じるコントロールバー -->
+                <div class="p-2.5 bg-slate-800 flex items-center justify-between gap-2">
+                  <button type="button" onclick="stopReceiptCamera()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium transition">
+                    <i class="fa-solid fa-xmark mr-1"></i>閉じる
+                  </button>
+                  <button type="button" onclick="captureReceiptPhoto()" class="flex-1 py-2 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>シャッターを切る（撮影してOCR解析）</span>
+                  </button>
+                </div>
+              </div>
+              <canvas id="camera-capture-canvas" class="hidden"></canvas>
+
+              <!-- 画像ドロップ＆静止画プレビュー・OCRエリア -->
+              <div id="drop-zone" onclick="document.getElementById('receipt-image-input').click()" class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-white rounded-lg p-3 text-center cursor-pointer transition">
+                <input type="file" id="receipt-image-input" accept="image/*" class="hidden" onchange="handleReceiptImageUpload(event)">
+                <div id="drop-zone-placeholder" class="py-1">
+                  <i class="fa-solid fa-cloud-arrow-up text-xl text-brand-500 mb-1"></i>
+                  <p class="text-xs font-medium text-slate-700">ドラッグ＆ドロップでレシート画像を追加</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">JPG / PNG 対応・画像を見ながら手入力やOCR読取が可能</p>
+                </div>
+                <!-- プレビュー＆OCR実行バー -->
+                <div id="receipt-preview-wrapper" class="hidden space-y-2" onclick="event.stopPropagation()">
+                  <div class="relative max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900/5">
+                    <img id="receipt-preview-img" src="" alt="レシートプレビュー" class="mx-auto max-h-48 object-contain">
+                    <button type="button" onclick="clearReceiptImage()" class="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-800/80 text-white text-xs hover:bg-rose-600 flex items-center justify-center" title="画像を閉じる">
+                      <i class="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                  <!-- OCR前処理オプション＆撮り直しバー -->
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
+                    <label class="inline-flex items-center gap-1.5 text-slate-700 font-medium cursor-pointer select-none">
+                      <input type="checkbox" id="ocr-enhance-contrast" checked class="rounded text-indigo-600 focus:ring-indigo-500">
+                      <span>文字くっきり補正（高コントラスト化）</span>
+                    </label>
+                    <button type="button" onclick="retakeReceiptCamera()" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+                      <i class="fa-solid fa-rotate-right"></i> カメラで撮り直す
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <button type="button" id="run-ocr-btn" onclick="runReceiptOCR()" class="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>画像から文字を自動読取 (OCR)</span>
+                    </button>
+                  </div>
+                  <div id="ocr-progress-box" class="hidden">
+                    <div class="flex justify-between text-[10px] text-indigo-700 font-medium mb-1">
+                      <span id="ocr-status-text">OCRエンジン初期化中...</span>
+                      <span id="ocr-percent-text">0%</span>
+                    </div>
+                    <div class="w-full bg-indigo-100 rounded-full h-1.5">
+                      <div id="ocr-progress-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- レシートテキスト解析ツール -->
+              <div class="bg-white rounded-lg border border-slate-200 p-2.5 space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                    <i class="fa-solid fa-align-left text-slate-400"></i> レシートテキスト貼り付け解析
+                  </label>
+                  <button type="button" onclick="insertSampleReceiptText()" class="text-[10px] text-brand-600 hover:underline">
+                    サンプル文を挿入
+                  </button>
+                </div>
+                <textarea id="receipt-raw-text" rows="3" placeholder="例：&#10;2026/11/24 ライフ 駅前店&#10;国産豚こま切れ 498&#10;キャベツ 198&#10;牛乳 218" class="w-full text-xs border border-slate-300 rounded-lg p-2 focus:outline-none focus:border-brand-500 font-mono"></textarea>
+                <button type="button" onclick="parseReceiptTextToForm()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-medium rounded-lg flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-arrow-down-short-wide"></i> テキストを解析して下の明細に反映
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- レシート基本情報フォーム（日付・購入先・支払方法） -->
+          <form id="receipt-form" onsubmit="saveReceipt(event)" class="space-y-4">
+            <input type="hidden" id="editing-receipt-id" value="">
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <!-- 購入日 -->
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">購入日 <span class="text-rose-500">*</span></label>
+                <input type="date" id="form-date" required class="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+              </div>
+
+              <!-- 購入先（店舗名） -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] font-bold text-slate-600">購入先 <span class="text-rose-500">*</span></label>
+                  <button type="button" onclick="quickAddMaster('stores')" class="text-[10px] text-brand-600 hover:underline font-medium">+追加</button>
+                </div>
+                <input type="text" id="form-store" list="store-datalist" required placeholder="店舗を選択/入力" class="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+                <datalist id="store-datalist"></datalist>
+              </div>
+
+              <!-- 支払方法 -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] font-bold text-slate-600">支払方法 <span class="text-rose-500">*</span></label>
+                  <button type="button" onclick="quickAddMaster('payments')" class="text-[10px] text-brand-600 hover:underline font-medium">+追加</button>
+                </div>
+                <select id="form-payment" required class="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+                </select>
+              </div>
+            </div>
+
+            <!-- 購入商品明細リスト -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <i class="fa-solid fa-list-ul text-brand-600"></i> 購入商品リスト（項目ごとに分類設定）
+                </label>
+                <button type="button" onclick="addItemRow()" class="px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold flex items-center gap-1 transition">
+                  <i class="fa-solid fa-plus"></i> 商品行を追加
+                </button>
+              </div>
+
+              <div id="item-rows-container" class="space-y-2.5">
+                <!-- 商品明細カードが動的に追加される -->
+              </div>
+            </div>
+
+            <!-- レシート全体メモ -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">レシート全体メモ（任意）</label>
+              <input type="text" id="form-memo" placeholder="例：週末のまとめ買い、ポイント5倍デー" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+            </div>
+
+            <!-- 合計金額＆登録ボタン -->
+            <div class="pt-3 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
+              <div class="flex items-center justify-between mb-3 px-1">
+                <span class="text-xs font-bold text-slate-600">レシート合計金額 (<span id="form-item-count">0</span>点)</span>
+                <span id="form-total-amount" class="text-2xl font-bold text-brand-600">¥0</span>
+              </div>
+              <button type="submit" id="submit-receipt-btn" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-sm flex items-center justify-center gap-2 transition cursor-pointer">
+                <i class="fa-solid fa-check"></i>
+                <span id="submit-btn-label">この購入を家計簿に登録する</span>
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </aside>
+
+    </div>
   </main>
 
+  <!-- =========================================================
+       マスタ管理モーダル（大分類・中分類・小分類 / 購入先 / 支払方法）
+       ========================================================= -->
+  <div id="master-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 hidden items-center justify-center p-3 sm:p-5">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+      <!-- モーダルヘッダー -->
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-brand-600 text-lg"></i>
+          <h3 class="font-bold text-base sm:text-lg text-slate-800">マスタ管理（追加・変更・削除）</h3>
+        </div>
+        <button type="button" onclick="closeMasterModal()" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- タブ切り替え -->
+      <div class="flex border-b border-slate-200 px-5 bg-white">
+        <button type="button" id="tab-btn-categories" onclick="switchMasterTab('categories')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 tab-active transition">
+          <i class="fa-solid fa-folder-tree mr-1.5"></i>分類階層（大・中・小）
+        </button>
+        <button type="button" id="tab-btn-stores" onclick="switchMasterTab('stores')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 transition">
+          <i class="fa-solid fa-store mr-1.5"></i>購入先（店舗）
+        </button>
+        <button type="button" id="tab-btn-payments" onclick="switchMasterTab('payments')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 transition">
+          <i class="fa-solid fa-credit-card mr-1.5"></i>支払方法
+        </button>
+      </div>
+
+      <!-- モーダルコンテンツ -->
+      <div class="p-5 overflow-y-auto flex-1 bg-slate-50/50">
+
+        <!-- 1. 分類階層管理タブ -->
+        <div id="master-tab-categories" class="space-y-4">
+          <p class="text-xs text-slate-600 bg-blue-50 border border-blue-200 rounded-lg p-2.5">
+            <i class="fa-solid fa-circle-info text-brand-600 mr-1"></i>
+            大分類を選択すると右側に中分類、さらに中分類を選択すると小分類が表示されます。それぞれの追加・名称変更・削除が可能です。
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 大分類カラム -->
+            <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
+              <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
+                <span>1. 大分類</span>
+                <span id="master-major-count" class="text-[10px] text-slate-400"></span>
+              </h4>
+              <div class="flex gap-1.5 mb-2">
+                <input type="text" id="new-major-name" placeholder="新規 大分類名" class="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500">
+                <button type="button" onclick="addMajorCategory()" class="px-2.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg">追加</button>
+              </div>
+              <div id="master-major-list" class="flex-1 overflow-y-auto space-y-1"></div>
+            </div>
+
+            <!-- 中分類カラム -->
+            <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
+              <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
+                <span>2. 中分類 <span id="selected-major-label" class="text-brand-600"></span></span>
+              </h4>
+              <div class="flex gap-1.5 mb-2">
+                <input type="text" id="new-medium-name" placeholder="新規 中分類名" class="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500">
+                <button type="button" onclick="addMediumCategory()" class="px-2.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg">追加</button>
+              </div>
+              <div id="master-medium-list" class="flex-1 overflow-y-auto space-y-1"></div>
+            </div>
+
+            <!-- 小分類カラム -->
+            <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
+              <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
+                <span>3. 小分類 <span id="selected-medium-label" class="text-brand-600"></span></span>
+              </h4>
+              <div class="flex gap-1.5 mb-2">
+                <input type="text" id="new-minor-name" placeholder="新規 小分類名" class="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500">
+                <button type="button" onclick="addMinorCategory()" class="px-2.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg">追加</button>
+              </div>
+              <div id="master-minor-list" class="flex-1 overflow-y-auto space-y-1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 購入先（店舗）管理タブ -->
+        <div id="master-tab-stores" class="hidden space-y-4 max-w-xl mx-auto">
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <h4 class="text-sm font-bold text-slate-800 mb-3">よく使う購入先（店舗名）の登録・編集</h4>
+            <div class="flex gap-2 mb-4">
+              <input type="text" id="new-store-name" placeholder="例：イオン、セブン-イレブン、Amazon" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500">
+              <button type="button" onclick="addStoreMaster()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-lg">追加</button>
+            </div>
+            <div id="master-store-list" class="divide-y divide-slate-100 max-h-[340px] overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- 3. 支払方法管理タブ -->
+        <div id="master-tab-payments" class="hidden space-y-4 max-w-xl mx-auto">
+          <div class="bg-white rounded-xl border border-slate-200 p-4">
+            <h4 class="text-sm font-bold text-slate-800 mb-3">支払方法の登録・編集</h4>
+            <div class="flex gap-2 mb-4">
+              <input type="text" id="new-payment-name" placeholder="例：現金、楽天カード、PayPay、Suica" class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500">
+              <button type="button" onclick="addPaymentMaster()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-lg">追加</button>
+            </div>
+            <div id="master-payment-list" class="divide-y divide-slate-100 max-h-[340px] overflow-y-auto"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 bg-white flex justify-end">
+        <button type="button" onclick="closeMasterModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold rounded-lg transition">
+          完了して閉じる
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 名称変更／クイック追加用ミニモーダル -->
+  <div id="prompt-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 border border-slate-200">
+      <h3 id="prompt-title" class="text-base font-bold text-slate-800 mb-3">名称を入力</h3>
+      <input type="text" id="prompt-input" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500 mb-4">
+      <div class="flex justify-end gap-2">
+        <button type="button" id="prompt-cancel-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200">キャンセル</button>
+        <button type="button" id="prompt-ok-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-600 hover:bg-brand-700">決定</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    (() => {
-      const STORAGE_KEY = "kakeibo_pc_records_v1";
-      const MIN_SCALE = 0.5;
-      const MAX_SCALE = 3.0;
-      const SCALE_STEP = 0.25;
+    // =========================================================================
+    // 1. 定数・初期サンプルデータ・セキュリティ用ヘルパー
+    // =========================================================================
+    const STORAGE_KEY = 'smart_kakeibo_pro_v1';
+    const MAX_STRING_LEN = 120;
+    const MAX_MEMO_LEN = 500;
+    const MAX_ITEMS_PER_RECEIPT = 200;
 
-      const form = document.getElementById("purchaseForm");
-      const dateInput = document.getElementById("purchaseDate");
-      const categoryInput = document.getElementById("purchaseCategory");
-      const nameInput = document.getElementById("itemName");
-      const amountInput = document.getElementById("itemAmount");
-      const memoInput = document.getElementById("itemMemo");
+    function uid(prefix = 'id') {
+      return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+    }
 
-      const receiptInput = document.getElementById("receiptInput");
-      const receiptPreviewImg = document.getElementById("receiptPreviewImg");
-      const receiptPlaceholder = document.getElementById("receiptPlaceholder");
-      const zoomInBtn = document.getElementById("zoomInBtn");
-      const zoomOutBtn = document.getElementById("zoomOutBtn");
-      const zoomResetBtn = document.getElementById("zoomResetBtn");
-      const zoomLabel = document.getElementById("zoomLabel");
-      const clearReceiptBtn = document.getElementById("clearReceiptBtn");
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
-      const historyBody = document.getElementById("historyBody");
-      const totalAmountLabel = document.getElementById("totalAmountLabel");
-      const monthAmountLabel = document.getElementById("monthAmountLabel");
-      const itemCountLabel = document.getElementById("itemCountLabel");
+    function escapeAttr(str) {
+      return escapeHtml(str);
+    }
 
-      const exportJsonBtn = document.getElementById("exportJsonBtn");
-      const importJsonInput = document.getElementById("importJsonInput");
+    function sanitizeText(val, maxLen = MAX_STRING_LEN, fallback = '') {
+      if (typeof val !== 'string') return fallback;
+      const trimmed = val.trim();
+      if (!trimmed) return fallback;
+      return trimmed.slice(0, maxLen);
+    }
 
-      let currentReceiptDataUrl = "";
-      let currentScale = 1;
-      let records = loadRecords();
+    function sanitizeDate(val, fallback = '') {
+      if (typeof val !== 'string') return fallback;
+      const m = val.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!m) return fallback;
+      const d = new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return fallback;
+      return `${m[1]}-${m[2]}-${m[3]}`;
+    }
 
-      // 今日の日付を初期値に設定
-      dateInput.value = new Date().toISOString().slice(0, 10);
+    function sanitizePositiveInt(val, fallback = 0, max = 100000000) {
+      const n = Number(val);
+      if (!Number.isFinite(n)) return fallback;
+      const rounded = Math.round(n);
+      if (rounded < 0) return 0;
+      return Math.min(rounded, max);
+    }
 
-      function loadRecords() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return [];
-          const parsed = JSON.parse(raw);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch {
-          return [];
-        }
-      }
+    function createDefaultData() {
+      const now = new Date();
+      const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const d1 = `${ym}-03`;
+      const d2 = `${ym}-08`;
+      const d3 = `${ym}-15`;
 
-      function saveRecords() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-      }
-
-      function updateScale(nextScale) {
-        currentScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Number(nextScale.toFixed(2))));
-        zoomLabel.textContent = `${Math.round(currentScale * 100)}%`;
-        if (currentReceiptDataUrl) {
-          receiptPreviewImg.style.transform = `scale(${currentScale})`;
-        }
-      }
-
-      function clearReceipt() {
-        currentReceiptDataUrl = "";
-        receiptInput.value = "";
-        receiptPreviewImg.src = "";
-        receiptPreviewImg.style.display = "none";
-        receiptPlaceholder.style.display = "block";
-        updateScale(1);
-      }
-
-      receiptInput.addEventListener("change", (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          clearReceipt();
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => {
-          currentReceiptDataUrl = typeof reader.result === "string" ? reader.result : "";
-          if (currentReceiptDataUrl) {
-            receiptPreviewImg.src = currentReceiptDataUrl;
-            receiptPreviewImg.style.display = "block";
-            receiptPlaceholder.style.display = "none";
-            updateScale(1);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-
-      zoomInBtn.addEventListener("click", () => updateScale(currentScale + SCALE_STEP));
-      zoomOutBtn.addEventListener("click", () => updateScale(currentScale - SCALE_STEP));
-      zoomResetBtn.addEventListener("click", () => updateScale(1));
-      clearReceiptBtn.addEventListener("click", clearReceipt);
-
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const name = nameInput.value.trim();
-        const amount = Number(amountInput.value);
-        const date = dateInput.value;
-        const category = categoryInput.value;
-        const memo = memoInput.value.trim();
-
-        if (!name || Number.isNaN(amount) || amount < 0 || !date) return;
-
-        const record = {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          date,
-          category,
-          name,
-          amount,
-          memo,
-          receipt: currentReceiptDataUrl || ""
-        };
-
-        records.unshift(record);
-        saveRecords();
-        render();
-
-        nameInput.value = "";
-        amountInput.value = "";
-        memoInput.value = "";
-        clearReceipt();
-        nameInput.focus();
-      });
-
-      form.addEventListener("reset", () => {
-        setTimeout(() => {
-          dateInput.value = new Date().toISOString().slice(0, 10);
-          clearReceipt();
-        }, 0);
-      });
-
-      function formatYen(num) {
-        return `¥${Number(num || 0).toLocaleString("ja-JP")}`;
-      }
-
-      function render() {
-        const total = records.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-        const nowMonth = new Date().toISOString().slice(0, 7);
-        const monthTotal = records
-          .filter((r) => String(r.date || "").startsWith(nowMonth))
-          .reduce((sum, r) => sum + Number(r.amount || 0), 0);
-
-        totalAmountLabel.textContent = formatYen(total);
-        monthAmountLabel.textContent = formatYen(monthTotal);
-        itemCountLabel.textContent = `${records.length}件`;
-
-        historyBody.innerHTML = "";
-        if (records.length === 0) {
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 6;
-          td.className = "empty-msg";
-          td.textContent = "まだ購入商品が登録されていません。右側の登録欄から追加してください。";
-          tr.appendChild(td);
-          historyBody.appendChild(tr);
-          return;
-        }
-
-        for (const r of records) {
-          const tr = document.createElement("tr");
-
-          const tdDate = document.createElement("td");
-          tdDate.textContent = r.date || "";
-
-          const tdName = document.createElement("td");
-          tdName.textContent = r.name || "";
-          if (r.memo) {
-            const sub = document.createElement("div");
-            sub.style.fontSize = "0.78rem";
-            sub.style.color = "#64748b";
-            sub.textContent = r.memo;
-            tdName.appendChild(sub);
-          }
-
-          const tdCat = document.createElement("td");
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.textContent = r.category || "その他";
-          tdCat.appendChild(badge);
-
-          const tdAmount = document.createElement("td");
-          tdAmount.className = "num";
-          tdAmount.textContent = formatYen(r.amount);
-
-          const tdReceipt = document.createElement("td");
-          if (r.receipt) {
-            const viewBtn = document.createElement("button");
-            viewBtn.type = "button";
-            viewBtn.className = "thumb-btn";
-            viewBtn.textContent = "表示";
-            viewBtn.addEventListener("click", () => {
-              currentReceiptDataUrl = r.receipt;
-              receiptInput.value = "";
-              receiptPreviewImg.src = r.receipt;
-              receiptPreviewImg.style.display = "block";
-              receiptPlaceholder.style.display = "none";
-              updateScale(1);
-            });
-            tdReceipt.appendChild(viewBtn);
-          } else {
-            tdReceipt.textContent = "—";
-            tdReceipt.style.color = "#94a3b8";
-          }
-
-          const tdAct = document.createElement("td");
-          const delBtn = document.createElement("button");
-          delBtn.type = "button";
-          delBtn.className = "danger thumb-btn";
-          delBtn.textContent = "削除";
-          delBtn.addEventListener("click", () => {
-            records = records.filter((item) => item.id !== r.id);
-            saveRecords();
-            render();
-          });
-          tdAct.appendChild(delBtn);
-
-          tr.append(tdDate, tdName, tdCat, tdAmount, tdReceipt, tdAct);
-          historyBody.appendChild(tr);
-        }
-      }
-
-      // JSONバックアップ書き出し
-      exportJsonBtn.addEventListener("click", () => {
-        const blob = new Blob([JSON.stringify(records, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `kakeibo-pc-${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      // JSON読み込み
-      importJsonInput.addEventListener("change", (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            const imported = JSON.parse(String(reader.result || "[]"));
-            if (!Array.isArray(imported)) {
-              alert("JSONの形式が正しくありません。配列データを選択してください。");
-              return;
+      const categories = [
+        {
+          id: 'maj_food',
+          name: '食費',
+          mediums: [
+            {
+              id: 'med_grocery',
+              name: '生鮮・スーパー食材',
+              minors: [
+                { id: 'min_veggie', name: '野菜・果物' },
+                { id: 'min_meat', name: '肉・魚介' },
+                { id: 'min_dairy', name: '乳製品・卵・パン' },
+                { id: 'min_seasoning', name: '調味料・乾物' }
+              ]
+            },
+            {
+              id: 'med_eating_out',
+              name: '外食・カフェ',
+              minors: [
+                { id: 'min_lunch', name: 'ランチ・定食' },
+                { id: 'min_cafe', name: 'コーヒー・スイーツ' },
+                { id: 'min_dinner_out', name: 'ディナー・居酒屋' }
+              ]
             }
-            records = imported;
-            saveRecords();
-            render();
-          } catch {
-            alert("JSONファイルの読み込みに失敗しました。");
-          } finally {
-            importJsonInput.value = "";
+          ]
+        },
+        {
+          id: 'maj_daily',
+          name: '日用品・消耗品',
+          mediums: [
+            {
+              id: 'med_household',
+              name: '家事・衛生用品',
+              minors: [
+                { id: 'min_detergent', name: '洗剤・柔軟剤' },
+                { id: 'min_paper', name: 'ティッシュ・トイレットペーパー' },
+                { id: 'min_bath_toilet', name: 'バス・トイレ用品' }
+              ]
+            },
+            {
+              id: 'med_health_beauty',
+              name: 'ヘルスケア・美容',
+              minors: [
+                { id: 'min_medicine', name: '医薬品・サプリ' },
+                { id: 'min_cosmetics', name: 'スキンケア・ヘアケア' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'maj_living',
+          name: '住居・光熱・通信',
+          mediums: [
+            {
+              id: 'med_utility',
+              name: '水道・光熱費',
+              minors: [
+                { id: 'min_elec', name: '電気代' },
+                { id: 'min_gas', name: 'ガス代' },
+                { id: 'min_water', name: '水道代' }
+              ]
+            },
+            {
+              id: 'med_telecom',
+              name: '通信・サブスク',
+              minors: [
+                { id: 'min_mobile', name: '携帯電話・インターネット' },
+                { id: 'min_cloud_media', name: '動画・音楽・クラウド' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'maj_transport',
+          name: '交通・お出かけ',
+          mediums: [
+            {
+              id: 'med_transit',
+              name: '公共交通・車',
+              minors: [
+                { id: 'min_train_bus', name: '電車・バス' },
+                { id: 'min_gasoline_park', name: 'ガソリン・駐車場' }
+              ]
+            },
+            {
+              id: 'med_leisure',
+              name: '娯楽・交際',
+              minors: [
+                { id: 'min_books_hobby', name: '書籍・趣味' },
+                { id: 'min_gift', name: 'プレゼント・交際費' }
+              ]
+            }
+          ]
+        }
+      ];
+
+      const stores = ['ライフ 駅前店', 'イオンモール', 'ウエルシア薬局', 'スターバックス', 'Amazon'];
+      const payments = ['楽天カード', 'PayPay', '現金', '交通系IC (Suica)'];
+
+      const receipts = [
+        {
+          id: uid('rec'),
+          date: d1,
+          store: 'ライフ 駅前店',
+          payment: '楽天カード',
+          memo: '週末のまとめ買い',
+          items: [
+            { id: uid('itm'), name: '国産豚こま切れ', price: 540, majorId: 'maj_food', mediumId: 'med_grocery', minorId: 'min_meat' },
+            { id: uid('itm'), name: 'キャベツ・トマトセット', price: 320, majorId: 'maj_food', mediumId: 'med_grocery', minorId: 'min_veggie' },
+            { id: uid('itm'), name: '特濃牛乳', price: 218, majorId: 'maj_food', mediumId: 'med_grocery', minorId: 'min_dairy' },
+            { id: uid('itm'), name: '食器用洗剤つめかえ', price: 258, majorId: 'maj_daily', mediumId: 'med_household', minorId: 'min_detergent' }
+          ]
+        },
+        {
+          id: uid('rec'),
+          date: d2,
+          store: 'ウエルシア薬局',
+          payment: 'PayPay',
+          memo: '',
+          items: [
+            { id: uid('itm'), name: 'ボックスティッシュ5箱組', price: 398, majorId: 'maj_daily', mediumId: 'med_household', minorId: 'min_paper' },
+            { id: uid('itm'), name: 'ビタミンCサプリメント', price: 980, majorId: 'maj_daily', mediumId: 'med_health_beauty', minorId: 'min_medicine' }
+          ]
+        },
+        {
+          id: uid('rec'),
+          date: d3,
+          store: 'スターバックス',
+          payment: '交通系IC (Suica)',
+          memo: '打合せ後の休憩',
+          items: [
+            { id: uid('itm'), name: 'ドリップコーヒー Grande', price: 465, majorId: 'maj_food', mediumId: 'med_eating_out', minorId: 'min_cafe' },
+            { id: uid('itm'), name: 'チーズケーキ', price: 495, majorId: 'maj_food', mediumId: 'med_eating_out', minorId: 'min_cafe' }
+          ]
+        }
+      ];
+
+      return {
+        categories,
+        stores,
+        payments,
+        receipts
+      };
+    }
+
+    // =========================================================================
+    // 2. アプリケーション状態・データ永続化・サニタイズ
+    // =========================================================================
+    let appState = createDefaultData();
+    let currentMonth = ''; // "YYYY-MM"
+    let expandedNodes = new Set(); // "maj:id", "med:id"
+    let categoryChartInstance = null;
+
+    // マスタモーダル選択状態
+    let masterSelectedMajorId = null;
+    let masterSelectedMediumId = null;
+
+    // カメラ・OCR状態
+    let cameraStream = null;
+    let cameraFacingMode = 'environment';
+    let availableVideoDevices = [];
+    let currentDeviceIndex = 0;
+
+    function sanitizeImportedState(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+
+      // カテゴリー階層の検証・正規化
+      let categories = [];
+      if (Array.isArray(raw.categories)) {
+        const seenMaj = new Set();
+        for (const maj of raw.categories) {
+          if (!maj || typeof maj !== 'object') continue;
+          const majName = sanitizeText(maj.name, 60);
+          if (!majName) continue;
+          let majId = sanitizeText(maj.id, 60, uid('maj'));
+          if (seenMaj.has(majId)) majId = uid('maj');
+          seenMaj.add(majId);
+
+          const mediums = [];
+          const seenMed = new Set();
+          if (Array.isArray(maj.mediums)) {
+            for (const med of maj.mediums) {
+              if (!med || typeof med !== 'object') continue;
+              const medName = sanitizeText(med.name, 60);
+              if (!medName) continue;
+              let medId = sanitizeText(med.id, 60, uid('med'));
+              if (seenMed.has(medId)) medId = uid('med');
+              seenMed.add(medId);
+
+              const minors = [];
+              const seenMin = new Set();
+              if (Array.isArray(med.minors)) {
+                for (const min of med.minors) {
+                  if (!min || typeof min !== 'object') continue;
+                  const minName = sanitizeText(min.name, 60);
+                  if (!minName) continue;
+                  let minId = sanitizeText(min.id, 60, uid('min'));
+                  if (seenMin.has(minId)) minId = uid('min');
+                  seenMin.add(minId);
+                  minors.push({ id: minId, name: minName });
+                }
+              }
+              mediums.push({ id: medId, name: medName, minors });
+            }
+          }
+          categories.push({ id: majId, name: majName, mediums });
+        }
+      }
+
+      if (categories.length === 0) {
+        categories = createDefaultData().categories;
+      }
+
+      const stores = Array.isArray(raw.stores)
+        ? [...new Set(raw.stores.map((s) => sanitizeText(s, 80)).filter(Boolean))]
+        : [...createDefaultData().stores];
+
+      const payments = Array.isArray(raw.payments)
+        ? [...new Set(raw.payments.map((p) => sanitizeText(p, 60)).filter(Boolean))]
+        : [...createDefaultData().payments];
+      if (payments.length === 0) payments.push('現金');
+
+      const receipts = [];
+      if (Array.isArray(raw.receipts)) {
+        for (const rec of raw.receipts) {
+          if (!rec || typeof rec !== 'object') continue;
+          const date = sanitizeDate(rec.date);
+          if (!date) continue;
+          const store = sanitizeText(rec.store, 80, '不明な店舗');
+          const payment = sanitizeText(rec.payment, 60, payments[0]);
+          const memo = sanitizeText(rec.memo, MAX_MEMO_LEN, '');
+          const items = [];
+          if (Array.isArray(rec.items)) {
+            for (const itm of rec.items.slice(0, MAX_ITEMS_PER_RECEIPT)) {
+              if (!itm || typeof itm !== 'object') continue;
+              const name = sanitizeText(itm.name, 100, '商品');
+              const price = sanitizePositiveInt(itm.price, 0);
+              const majorId = sanitizeText(itm.majorId, 60, categories[0].id);
+              const mediumId = sanitizeText(itm.mediumId, 60, '');
+              const minorId = sanitizeText(itm.minorId, 60, '');
+              items.push({
+                id: sanitizeText(itm.id, 60, uid('itm')),
+                name,
+                price,
+                majorId,
+                mediumId,
+                minorId
+              });
+            }
+          }
+          if (items.length > 0) {
+            receipts.push({
+              id: sanitizeText(rec.id, 60, uid('rec')),
+              date,
+              store,
+              payment,
+              memo,
+              items
+            });
+          }
+        }
+      }
+
+      return { categories, stores, payments, receipts };
+    }
+
+    function loadState() {
+      try {
+        const rawStr = localStorage.getItem(STORAGE_KEY);
+        if (!rawStr) {
+          appState = createDefaultData();
+          saveState(false);
+          return;
+        }
+        const parsed = JSON.parse(rawStr);
+        const clean = sanitizeImportedState(parsed);
+        if (clean) {
+          appState = clean;
+        } else {
+          appState = createDefaultData();
+          saveState(false);
+        }
+      } catch (e) {
+        console.warn('状態読み込みエラーのため初期データをセットします:', e);
+        appState = createDefaultData();
+        saveState(false);
+      }
+    }
+
+    function saveState(notify = false) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        if (notify) showToast('保存しました', 'success');
+      } catch (e) {
+        console.error('保存エラー:', e);
+        showToast('ブラウザの保存領域への書き込みに失敗しました', 'error');
+      }
+    }
+
+    // =========================================================================
+    // 3. UI通知・確認モーダル・プロンプトモーダル
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const colorMap = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        warning: 'bg-amber-500 text-slate-950',
+        info: 'bg-slate-800 text-white'
+      };
+      const iconMap = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
+
+      const el = document.createElement('div');
+      el.className = `px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition-all ${colorMap[type] || colorMap.info}`;
+      el.innerHTML = `<i class="fa-solid ${iconMap[type] || iconMap.info}"></i><span>${escapeHtml(message)}</span>`;
+      container.appendChild(el);
+
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-8px)';
+        setTimeout(() => el.remove(), 250);
+      }, 2600);
+    }
+
+    function showConfirm(title, message, okLabel = '実行する') {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok-btn');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = okLabel;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const cleanup = (result) => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          resolve(result);
+        };
+
+        const onOk = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+      });
+    }
+
+    function showPromptModal(title, defaultValue = '') {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('prompt-modal');
+        const titleEl = document.getElementById('prompt-title');
+        const inputEl = document.getElementById('prompt-input');
+        const okBtn = document.getElementById('prompt-ok-btn');
+        const cancelBtn = document.getElementById('prompt-cancel-btn');
+
+        titleEl.textContent = title;
+        inputEl.value = defaultValue;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+          inputEl.focus();
+          inputEl.select();
+        }, 50);
+
+        const cleanup = (val) => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          okBtn.removeEventListener('click', onOk);
+          cancelBtn.removeEventListener('click', onCancel);
+          inputEl.removeEventListener('keydown', onKey);
+          resolve(val);
+        };
+
+        const onOk = () => cleanup(inputEl.value.trim());
+        const onCancel = () => cleanup(null);
+        const onKey = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            onOk();
+          } else if (e.key === 'Escape') {
+            onCancel();
           }
         };
-        reader.readAsText(file);
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        inputEl.addEventListener('keydown', onKey);
+      });
+    }
+
+    // =========================================================================
+    // 4. 月次切り替え・3階層集計（大・中・小）・グラフ・支払方法別集計
+    // =========================================================================
+    function setTodayMonth() {
+      const now = new Date();
+      currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const picker = document.getElementById('current-month-picker');
+      if (picker) picker.value = currentMonth;
+      renderAll();
+    }
+
+    function onMonthPickerChange(val) {
+      if (!val || !/^\d{4}-\d{2}$/.test(val)) return;
+      currentMonth = val;
+      renderAll();
+    }
+
+    function changeMonth(delta) {
+      const parts = (currentMonth || '').split('-').map(Number);
+      if (parts.length !== 2 || !parts[0] || !parts[1]) {
+        setTodayMonth();
+        return;
+      }
+      const d = new Date(parts[0], parts[1] - 1 + delta, 1);
+      currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const picker = document.getElementById('current-month-picker');
+      if (picker) picker.value = currentMonth;
+      renderAll();
+    }
+
+    function getMonthReceipts(ym) {
+      return appState.receipts
+        .filter((r) => r.date && r.date.startsWith(ym))
+        .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+    }
+
+    function findCategoryNames(majorId, mediumId, minorId) {
+      const maj = appState.categories.find((c) => c.id === majorId);
+      const med = maj ? maj.mediums.find((m) => m.id === mediumId) : null;
+      const min = med ? med.minors.find((s) => s.id === minorId) : null;
+      return {
+        majorName: maj ? maj.name : '未分類（大）',
+        mediumName: med ? med.name : '未分類（中）',
+        minorName: min ? min.name : '未分類（小）'
+      };
+    }
+
+    function renderAll() {
+      populateMasterSelects();
+      renderDashboard();
+      renderHistory();
+    }
+
+    function renderDashboard() {
+      const receipts = getMonthReceipts(currentMonth);
+      let totalAmount = 0;
+      let totalItems = 0;
+
+      // 3階層集計マップ構築
+      const majorMap = new Map();
+      for (const maj of appState.categories) {
+        majorMap.set(maj.id, {
+          id: maj.id,
+          name: maj.name,
+          amount: 0,
+          count: 0,
+          mediums: new Map()
+        });
+        for (const med of maj.mediums) {
+          majorMap.get(maj.id).mediums.set(med.id, {
+            id: med.id,
+            name: med.name,
+            amount: 0,
+            count: 0,
+            minors: new Map()
+          });
+          for (const min of med.minors) {
+            majorMap.get(maj.id).mediums.get(med.id).minors.set(min.id, {
+              id: min.id,
+              name: min.name,
+              amount: 0,
+              count: 0
+            });
+          }
+        }
+      }
+
+      const paymentMap = new Map();
+      for (const p of appState.payments) {
+        paymentMap.set(p, { name: p, amount: 0, count: 0 });
+      }
+
+      for (const rec of receipts) {
+        const payKey = rec.payment || '未指定';
+        if (!paymentMap.has(payKey)) {
+          paymentMap.set(payKey, { name: payKey, amount: 0, count: 0 });
+        }
+        let recSum = 0;
+
+        for (const itm of rec.items || []) {
+          const price = Number(itm.price) || 0;
+          totalAmount += price;
+          totalItems += 1;
+          recSum += price;
+
+          const majId = itm.majorId || 'unclassified_maj';
+          const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
+
+          if (!majorMap.has(majId)) {
+            majorMap.set(majId, {
+              id: majId,
+              name: names.majorName,
+              amount: 0,
+              count: 0,
+              mediums: new Map()
+            });
+          }
+          const majNode = majorMap.get(majId);
+          majNode.amount += price;
+          majNode.count += 1;
+
+          const medId = itm.mediumId || 'unclassified_med';
+          if (!majNode.mediums.has(medId)) {
+            majNode.mediums.set(medId, {
+              id: medId,
+              name: names.mediumName,
+              amount: 0,
+              count: 0,
+              minors: new Map()
+            });
+          }
+          const medNode = majNode.mediums.get(medId);
+          medNode.amount += price;
+          medNode.count += 1;
+
+          const minId = itm.minorId || 'unclassified_min';
+          if (!medNode.minors.has(minId)) {
+            medNode.minors.set(minId, {
+              id: minId,
+              name: names.minorName,
+              amount: 0,
+              count: 0
+            });
+          }
+          const minNode = medNode.minors.get(minId);
+          minNode.amount += price;
+          minNode.count += 1;
+        }
+
+        const payNode = paymentMap.get(payKey);
+        payNode.amount += recSum;
+        payNode.count += 1;
+      }
+
+      // KPI更新
+      document.getElementById('kpi-total-amount').textContent = `¥${totalAmount.toLocaleString()}`;
+      document.getElementById('kpi-receipt-count').textContent = String(receipts.length);
+      document.getElementById('kpi-item-count').textContent = String(totalItems);
+
+      // 階層アコーディオン描画
+      renderCategoryHierarchy(majorMap, totalAmount);
+
+      // グラフ描画
+      renderCategoryChart(majorMap);
+
+      // 支払方法別集計描画
+      renderPaymentSummary(paymentMap, totalAmount);
+    }
+
+    function renderCategoryHierarchy(majorMap, totalAmount) {
+      const container = document.getElementById('category-hierarchy-container');
+      const majors = Array.from(majorMap.values()).filter((m) => m.amount > 0 || appState.categories.some((c) => c.id === m.id));
+
+      if (totalAmount === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            ${escapeHtml(currentMonth)} の支出データはまだありません。<br>右側のパネルから購入を登録してください。
+          </div>`;
+        return;
+      }
+
+      let html = '';
+      for (const maj of majors) {
+        if (maj.amount === 0) continue;
+        const majKey = `maj:${maj.id}`;
+        const isMajOpen = expandedNodes.has(majKey);
+        const pct = totalAmount > 0 ? ((maj.amount / totalAmount) * 100).toFixed(1) : '0.0';
+
+        html += `
+          <div class="border border-slate-200 rounded-xl overflow-hidden bg-white">
+            <button type="button" data-action="toggle-node" data-key="${escapeAttr(majKey)}" class="w-full px-3.5 py-2.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between gap-2 text-left transition">
+              <div class="flex items-center gap-2 min-w-0">
+                <i class="fa-solid ${isMajOpen ? 'fa-chevron-down' : 'fa-chevron-right'} text-[11px] text-slate-500 w-3"></i>
+                <span class="font-bold text-xs sm:text-sm text-slate-800 truncate">${escapeHtml(maj.name)}</span>
+                <span class="text-[11px] text-slate-400 shrink-0">(${maj.count}点 / ${pct}%)</span>
+              </div>
+              <span class="font-bold text-xs sm:text-sm text-slate-900 shrink-0">¥${maj.amount.toLocaleString()}</span>
+            </button>
+        `;
+
+        if (isMajOpen) {
+          html += `<div class="divide-y divide-slate-100 bg-white">`;
+          for (const med of maj.mediums.values()) {
+            if (med.amount === 0) continue;
+            const medKey = `med:${maj.id}:${med.id}`;
+            const isMedOpen = expandedNodes.has(medKey);
+            const medPct = maj.amount > 0 ? ((med.amount / maj.amount) * 100).toFixed(0) : '0';
+
+            html += `
+              <div class="pl-5 pr-3.5 py-2">
+                <button type="button" data-action="toggle-node" data-key="${escapeAttr(medKey)}" class="w-full flex items-center justify-between gap-2 text-left py-0.5 hover:text-brand-600 transition">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <i class="fa-solid ${isMedOpen ? 'fa-minus' : 'fa-plus'} text-[10px] text-brand-500 w-3"></i>
+                    <span class="font-semibold text-xs text-slate-700 truncate">${escapeHtml(med.name)}</span>
+                    <span class="text-[10px] text-slate-400 shrink-0">(大分類比 ${medPct}%)</span>
+                  </div>
+                  <span class="font-semibold text-xs text-slate-800 shrink-0">¥${med.amount.toLocaleString()}</span>
+                </button>
+            `;
+
+            if (isMedOpen) {
+              html += `<div class="mt-1.5 ml-4 pl-2.5 border-l-2 border-brand-100 space-y-1">`;
+              for (const min of med.minors.values()) {
+                if (min.amount === 0) continue;
+                html += `
+                  <div class="flex items-center justify-between text-xs text-slate-600 py-0.5">
+                    <span class="truncate">${escapeHtml(min.name)} <span class="text-[10px] text-slate-400">(${min.count}点)</span></span>
+                    <span class="font-medium text-slate-700 shrink-0">¥${min.amount.toLocaleString()}</span>
+                  </div>
+                `;
+              }
+              html += `</div>`;
+            }
+
+            html += `</div>`;
+          }
+          html += `</div>`;
+        }
+
+        html += `</div>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function toggleCategoryNode(key) {
+      if (!key) return;
+      if (expandedNodes.has(key)) {
+        expandedNodes.delete(key);
+      } else {
+        expandedNodes.add(key);
+      }
+      renderDashboard();
+    }
+
+    function expandAllCategories(expand) {
+      expandedNodes.clear();
+      if (expand) {
+        for (const maj of appState.categories) {
+          expandedNodes.add(`maj:${maj.id}`);
+          for (const med of maj.mediums) {
+            expandedNodes.add(`med:${maj.id}:${med.id}`);
+          }
+        }
+      }
+      renderDashboard();
+    }
+
+    function renderCategoryChart(majorMap) {
+      const canvas = document.getElementById('category-chart');
+      const emptyMsg = document.getElementById('chart-empty-msg');
+      if (!canvas || typeof Chart === 'undefined') return;
+
+      const entries = Array.from(majorMap.values()).filter((m) => m.amount > 0);
+      if (categoryChartInstance) {
+        categoryChartInstance.destroy();
+        categoryChartInstance = null;
+      }
+
+      if (entries.length === 0) {
+        canvas.classList.add('hidden');
+        emptyMsg.classList.remove('hidden');
+        return;
+      }
+
+      canvas.classList.remove('hidden');
+      emptyMsg.classList.add('hidden');
+
+      const palette = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+      categoryChartInstance = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: entries.map((e) => e.name),
+          datasets: [
+            {
+              data: entries.map((e) => e.amount),
+              backgroundColor: entries.map((_, idx) => palette[idx % palette.length]),
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 10,
+                font: { size: 11, family: '"Noto Sans JP", sans-serif' }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ¥${Number(ctx.raw || 0).toLocaleString()}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPaymentSummary(paymentMap, totalAmount) {
+      const container = document.getElementById('payment-summary-container');
+      const entries = Array.from(paymentMap.values())
+        .filter((p) => p.amount > 0)
+        .sort((a, b) => b.amount - a.amount);
+
+      if (entries.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400">支払データがありません</div>`;
+        return;
+      }
+
+      container.innerHTML = entries
+        .map((p) => {
+          const pct = totalAmount > 0 ? Math.round((p.amount / totalAmount) * 100) : 0;
+          return `
+            <div class="space-y-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-slate-700">${escapeHtml(p.name)} <span class="text-[10px] text-slate-400">(${p.count}件)</span></span>
+                <span class="font-bold text-slate-800">¥${p.amount.toLocaleString()} <span class="text-[10px] text-slate-400 font-normal">(${pct}%)</span></span>
+              </div>
+              <div class="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-brand-500 h-1.5 rounded-full" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 5. 購入履歴一覧（検索・絞り込み・編集・削除）
+    // =========================================================================
+    function renderHistory() {
+      const listEl = document.getElementById('receipt-history-list');
+      const badgeEl = document.getElementById('history-count-badge');
+      const keyword = (document.getElementById('filter-keyword')?.value || '').trim().toLowerCase();
+      const majorFilter = document.getElementById('filter-major-cat')?.value || '';
+      const paymentFilter = document.getElementById('filter-payment')?.value || '';
+
+      const monthReceipts = getMonthReceipts(currentMonth);
+      const filtered = monthReceipts.filter((rec) => {
+        if (paymentFilter && rec.payment !== paymentFilter) return false;
+
+        const matchingItems = (rec.items || []).filter((itm) => {
+          if (majorFilter && itm.majorId !== majorFilter) return false;
+          if (!keyword) return true;
+          const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
+          return (
+            (itm.name || '').toLowerCase().includes(keyword) ||
+            names.majorName.toLowerCase().includes(keyword) ||
+            names.mediumName.toLowerCase().includes(keyword) ||
+            names.minorName.toLowerCase().includes(keyword)
+          );
+        });
+
+        if (majorFilter || keyword) {
+          const storeHit = keyword ? (rec.store || '').toLowerCase().includes(keyword) || (rec.memo || '').toLowerCase().includes(keyword) : false;
+          if (majorFilter) return matchingItems.length > 0;
+          return matchingItems.length > 0 || storeHit;
+        }
+        return true;
       });
 
-      render();
-    })();
+      badgeEl.textContent = `${filtered.length}件`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `
+          <div class="p-8 text-center text-xs text-slate-400">
+            条件に一致する購入履歴はありません。
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered
+        .map((rec) => {
+          const sum = (rec.items || []).reduce((acc, itm) => acc + (Number(itm.price) || 0), 0);
+          const itemsHtml = (rec.items || [])
+            .map((itm) => {
+              const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
+              return `
+                <div class="flex items-center justify-between gap-2 py-1 text-xs border-t border-slate-100 first:border-t-0">
+                  <div class="min-w-0">
+                    <span class="font-medium text-slate-800">${escapeHtml(itm.name)}</span>
+                    <span class="ml-1.5 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                      ${escapeHtml(names.majorName)} ＞ ${escapeHtml(names.mediumName)} ＞ ${escapeHtml(names.minorName)}
+                    </span>
+                  </div>
+                  <span class="font-semibold text-slate-700 shrink-0">¥${(Number(itm.price) || 0).toLocaleString()}</span>
+                </div>
+              `;
+            })
+            .join('');
+
+          return `
+            <div class="p-4 hover:bg-slate-50/70 transition">
+              <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold text-slate-500">${escapeHtml(rec.date)}</span>
+                    <span class="text-sm font-bold text-slate-900">${escapeHtml(rec.store)}</span>
+                    <span class="text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
+                      ${escapeHtml(rec.payment)}
+                    </span>
+                  </div>
+                  ${rec.memo ? `<p class="text-[11px] text-slate-500 mt-0.5"><i class="fa-regular fa-note-sticky mr-1"></i>${escapeHtml(rec.memo)}</p>` : ''}
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="text-base font-bold text-slate-900">¥${sum.toLocaleString()}</span>
+                  <div class="flex items-center gap-1">
+                    <button type="button" data-action="edit-receipt" data-id="${escapeAttr(rec.id)}" class="px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition" title="編集">
+                      <i class="fa-solid fa-pen mr-1"></i>編集
+                    </button>
+                    <button type="button" data-action="delete-receipt" data-id="${escapeAttr(rec.id)}" class="px-2 py-1 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition" title="削除">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-slate-50/90 rounded-lg px-3 py-1.5 border border-slate-200/70">
+                ${itemsHtml}
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    // =========================================================================
+    // 6. 右パネル：1回の購入登録フォーム（商品明細行・3階層連動選択・保存）
+    // =========================================================================
+    function populateMasterSelects() {
+      // 店舗datalist
+      const storeDatalist = document.getElementById('store-datalist');
+      if (storeDatalist) {
+        storeDatalist.innerHTML = appState.stores.map((s) => `<option value="${escapeAttr(s)}"></option>`).join('');
+      }
+
+      // 支払方法セレクト（フォーム用＆履歴フィルター用）
+      const paySelect = document.getElementById('form-payment');
+      const currentPayVal = paySelect ? paySelect.value : '';
+      if (paySelect) {
+        paySelect.innerHTML = appState.payments
+          .map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`)
+          .join('');
+        if (currentPayVal && appState.payments.includes(currentPayVal)) {
+          paySelect.value = currentPayVal;
+        }
+      }
+
+      const filterPay = document.getElementById('filter-payment');
+      const currentFilterPay = filterPay ? filterPay.value : '';
+      if (filterPay) {
+        filterPay.innerHTML =
+          `<option value="">すべての支払方法</option>` +
+          appState.payments.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
+        if (currentFilterPay) filterPay.value = currentFilterPay;
+      }
+
+      const filterMajor = document.getElementById('filter-major-cat');
+      const currentFilterMajor = filterMajor ? filterMajor.value : '';
+      if (filterMajor) {
+        filterMajor.innerHTML =
+          `<option value="">すべての大分類</option>` +
+          appState.categories.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+        if (currentFilterMajor) filterMajor.value = currentFilterMajor;
+      }
+    }
+
+    function buildMajorOptionsHtml(selectedMajorId) {
+      return appState.categories
+        .map((c) => `<option value="${escapeAttr(c.id)}" ${c.id === selectedMajorId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`)
+        .join('');
+    }
+
+    function buildMediumOptionsHtml(majorId, selectedMediumId) {
+      const maj = appState.categories.find((c) => c.id === majorId) || appState.categories[0];
+      if (!maj || !maj.mediums.length) return `<option value="">中分類なし</option>`;
+      return maj.mediums
+        .map((m) => `<option value="${escapeAttr(m.id)}" ${m.id === selectedMediumId ? 'selected' : ''}>${escapeHtml(m.name)}</option>`)
+        .join('');
+    }
+
+    function buildMinorOptionsHtml(majorId, mediumId, selectedMinorId) {
+      const maj = appState.categories.find((c) => c.id === majorId) || appState.categories[0];
+      const med = maj ? maj.mediums.find((m) => m.id === mediumId) || maj.mediums[0] : null;
+      if (!med || !med.minors.length) return `<option value="">小分類なし</option>`;
+      return med.minors
+        .map((s) => `<option value="${escapeAttr(s.id)}" ${s.id === selectedMinorId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
+        .join('');
+    }
+
+    function addItemRow(initial = null) {
+      const container = document.getElementById('item-rows-container');
+      if (!container) return;
+
+      const defaultMaj = appState.categories[0]?.id || '';
+      const defaultMed = appState.categories[0]?.mediums[0]?.id || '';
+      const defaultMin = appState.categories[0]?.mediums[0]?.minors[0]?.id || '';
+
+      const majId = initial?.majorId && appState.categories.some((c) => c.id === initial.majorId) ? initial.majorId : defaultMaj;
+      const majObj = appState.categories.find((c) => c.id === majId);
+      const medId = initial?.mediumId && majObj?.mediums.some((m) => m.id === initial.mediumId)
+        ? initial.mediumId
+        : (majObj?.mediums[0]?.id || defaultMed);
+      const medObj = majObj?.mediums.find((m) => m.id === medId);
+      const minId = initial?.minorId && medObj?.minors.some((s) => s.id === initial.minorId)
+        ? initial.minorId
+        : (medObj?.minors[0]?.id || defaultMin);
+
+      const rowId = uid('row');
+      const card = document.createElement('div');
+      card.id = rowId;
+      card.className = 'p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2';
+
+      card.innerHTML = `
+        <div class="flex items-center gap-2">
+          <input type="text" data-field="name" value="${escapeAttr(initial?.name || '')}" placeholder="商品名（例：牛乳、洗剤）" required class="flex-1 px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+          <div class="relative w-28 shrink-0">
+            <span class="text-xs text-slate-400 absolute left-2 top-1/2 -translate-y-1/2">¥</span>
+            <input type="number" data-field="price" value="${initial?.price !== undefined ? Number(initial.price) : ''}" min="0" step="1" placeholder="金額" required oninput="updateFormTotal()" class="w-full pl-5 pr-2 py-1.5 text-xs font-bold text-right border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+          </div>
+          <button type="button" data-action="remove-row" data-row-id="${escapeAttr(rowId)}" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0" title="この行を削除">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-1.5">
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">大分類</label>
+            <select data-field="majorId" class="w-full px-1.5 py-1 text-[11px] border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+              ${buildMajorOptionsHtml(majId)}
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">中分類</label>
+            <select data-field="mediumId" class="w-full px-1.5 py-1 text-[11px] border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+              ${buildMediumOptionsHtml(majId, medId)}
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-slate-500 mb-0.5">小分類</label>
+            <select data-field="minorId" class="w-full px-1.5 py-1 text-[11px] border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+              ${buildMinorOptionsHtml(majId, medId, minId)}
+            </select>
+          </div>
+        </div>
+      `;
+
+      const majSel = card.querySelector('select[data-field="majorId"]');
+      const medSel = card.querySelector('select[data-field="mediumId"]');
+      const minSel = card.querySelector('select[data-field="minorId"]');
+
+      majSel.addEventListener('change', () => {
+        const nextMaj = majSel.value;
+        medSel.innerHTML = buildMediumOptionsHtml(nextMaj, '');
+        minSel.innerHTML = buildMinorOptionsHtml(nextMaj, medSel.value, '');
+      });
+
+      medSel.addEventListener('change', () => {
+        minSel.innerHTML = buildMinorOptionsHtml(majSel.value, medSel.value, '');
+      });
+
+      container.appendChild(card);
+      updateFormTotal();
+    }
+
+    function removeItemRow(rowId) {
+      const container = document.getElementById('item-rows-container');
+      const target = document.getElementById(rowId);
+      if (!container || !target) return;
+      if (container.children.length <= 1) {
+        showToast('最低1つの商品明細が必要です', 'warning');
+        return;
+      }
+      target.remove();
+      updateFormTotal();
+    }
+
+    function updateFormTotal() {
+      const container = document.getElementById('item-rows-container');
+      if (!container) return;
+      const cards = Array.from(container.children);
+      let sum = 0;
+      for (const card of cards) {
+        const priceInput = card.querySelector('input[data-field="price"]');
+        const p = Number(priceInput?.value || 0);
+        if (Number.isFinite(p) && p > 0) sum += Math.round(p);
+      }
+      document.getElementById('form-item-count').textContent = String(cards.length);
+      document.getElementById('form-total-amount').textContent = `¥${sum.toLocaleString()}`;
+    }
+
+    function resetReceiptForm() {
+      document.getElementById('editing-receipt-id').value = '';
+      document.getElementById('editing-badge').classList.add('hidden');
+      document.getElementById('submit-btn-label').textContent = 'この購入を家計簿に登録する';
+
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const defaultDate = currentMonth && currentMonth.startsWith(`${yyyy}-${mm}`) ? `${yyyy}-${mm}-${dd}` : `${currentMonth || `${yyyy}-${mm}`}-01`;
+
+      document.getElementById('form-date').value = defaultDate;
+      document.getElementById('form-store').value = appState.stores[0] || '';
+      if (appState.payments.length > 0) {
+        document.getElementById('form-payment').value = appState.payments[0];
+      }
+      document.getElementById('form-memo').value = '';
+
+      const container = document.getElementById('item-rows-container');
+      container.innerHTML = '';
+      addItemRow();
+      updateFormTotal();
+    }
+
+    function editReceipt(receiptId) {
+      const rec = appState.receipts.find((r) => r.id === receiptId);
+      if (!rec) return;
+
+      document.getElementById('editing-receipt-id').value = rec.id;
+      document.getElementById('editing-badge').classList.remove('hidden');
+      document.getElementById('submit-btn-label').textContent = '変更内容を更新する';
+
+      document.getElementById('form-date').value = rec.date;
+      document.getElementById('form-store').value = rec.store;
+      if (appState.payments.includes(rec.payment)) {
+        document.getElementById('form-payment').value = rec.payment;
+      }
+      document.getElementById('form-memo').value = rec.memo || '';
+
+      const container = document.getElementById('item-rows-container');
+      container.innerHTML = '';
+      for (const itm of rec.items || []) {
+        addItemRow(itm);
+      }
+      if (!rec.items || rec.items.length === 0) addItemRow();
+      updateFormTotal();
+      showToast('購入データを右パネルに読み込みました', 'info');
+    }
+
+    async function deleteReceipt(receiptId) {
+      const ok = await showConfirm('購入履歴の削除', 'このレシート（購入明細）を削除しますか？削除後は元に戻せません。', '削除する');
+      if (!ok) return;
+
+      appState.receipts = appState.receipts.filter((r) => r.id !== receiptId);
+      saveState(false);
+      renderAll();
+      showToast('購入履歴を削除しました', 'success');
+    }
+
+    function saveReceipt(event) {
+      event.preventDefault();
+
+      const date = sanitizeDate(document.getElementById('form-date').value);
+      const store = sanitizeText(document.getElementById('form-store').value, 80);
+      const payment = sanitizeText(document.getElementById('form-payment').value, 60);
+      const memo = sanitizeText(document.getElementById('form-memo').value, MAX_MEMO_LEN, '');
+      const editingId = document.getElementById('editing-receipt-id').value.trim();
+
+      if (!date) {
+        showToast('有効な購入日を入力してください', 'error');
+        return;
+      }
+      if (!store) {
+        showToast('購入先（店舗名）を入力してください', 'error');
+        return;
+      }
+
+      const cards = Array.from(document.getElementById('item-rows-container').children);
+      const items = [];
+      for (const card of cards) {
+        const name = sanitizeText(card.querySelector('input[data-field="name"]')?.value, 100);
+        const price = sanitizePositiveInt(card.querySelector('input[data-field="price"]')?.value, -1);
+        const majorId = card.querySelector('select[data-field="majorId"]')?.value || '';
+        const mediumId = card.querySelector('select[data-field="mediumId"]')?.value || '';
+        const minorId = card.querySelector('select[data-field="minorId"]')?.value || '';
+
+        if (!name || price < 0) {
+          showToast('すべての商品行に商品名と0以上の金額を入力してください', 'error');
+          return;
+        }
+        items.push({
+          id: uid('itm'),
+          name,
+          price,
+          majorId,
+          mediumId,
+          minorId
+        });
+      }
+
+      if (items.length === 0) {
+        showToast('商品明細を1件以上入力してください', 'error');
+        return;
+      }
+
+      // 新規店舗ならマスタに自動追加
+      if (!appState.stores.includes(store)) {
+        appState.stores.unshift(store);
+      }
+
+      if (editingId) {
+        const idx = appState.receipts.findIndex((r) => r.id === editingId);
+        if (idx !== -1) {
+          appState.receipts[idx] = {
+            ...appState.receipts[idx],
+            date,
+            store,
+            payment,
+            memo,
+            items
+          };
+          showToast('購入データを更新しました', 'success');
+        }
+      } else {
+        appState.receipts.unshift({
+          id: uid('rec'),
+          date,
+          store,
+          payment,
+          memo,
+          items
+        });
+        showToast('家計簿に購入を登録しました', 'success');
+      }
+
+      saveState(false);
+
+      // 登録した月にビューを合わせる
+      const recYm = date.slice(0, 7);
+      if (recYm !== currentMonth) {
+        currentMonth = recYm;
+        const picker = document.getElementById('current-month-picker');
+        if (picker) picker.value = currentMonth;
+      }
+
+      resetReceiptForm();
+      renderAll();
+    }
+
+    // =========================================================================
+    // 7. レシート読込み（Webカメラ撮影・画像OCR・テキスト解析）
+    // =========================================================================
+    function toggleReceiptReader() {
+      const body = document.getElementById('receipt-reader-body');
+      const chev = document.getElementById('receipt-reader-chevron');
+      if (!body) return;
+      const willOpen = body.classList.contains('hidden');
+      body.classList.toggle('hidden', !willOpen);
+      if (chev) {
+        chev.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+      }
+      if (!willOpen) {
+        stopReceiptCamera();
+      }
+    }
+
+    function setupDragAndDrop() {
+      const dropZone = document.getElementById('drop-zone');
+      if (!dropZone) return;
+
+      ['dragenter', 'dragover'].forEach((evName) => {
+        dropZone.addEventListener(evName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.add('border-brand-500', 'bg-brand-50/40');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach((evName) => {
+        dropZone.addEventListener(evName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropZone.classList.remove('border-brand-500', 'bg-brand-50/40');
+        });
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer?.files;
+        if (files && files.length > 0) {
+          loadImageFileToPreview(files[0]);
+        }
+      });
+    }
+
+    function handleReceiptImageUpload(event) {
+      const file = event.target?.files?.[0];
+      if (!file) return;
+      loadImageFileToPreview(file);
+      event.target.value = '';
+    }
+
+    function loadImageFileToPreview(file) {
+      if (!file.type || !file.type.startsWith('image/')) {
+        showToast('画像ファイル（JPG / PNGなど）を選択してください', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImageDataUrl(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setPreviewImageDataUrl(dataUrl) {
+      const img = document.getElementById('receipt-preview-img');
+      const placeholder = document.getElementById('drop-zone-placeholder');
+      const wrapper = document.getElementById('receipt-preview-wrapper');
+      if (!img || !placeholder || !wrapper) return;
+
+      img.src = dataUrl;
+      placeholder.classList.add('hidden');
+      wrapper.classList.remove('hidden');
+    }
+
+    function clearReceiptImage() {
+      const img = document.getElementById('receipt-preview-img');
+      const placeholder = document.getElementById('drop-zone-placeholder');
+      const wrapper = document.getElementById('receipt-preview-wrapper');
+      const progBox = document.getElementById('ocr-progress-box');
+      if (img) img.src = '';
+      if (wrapper) wrapper.classList.add('hidden');
+      if (placeholder) placeholder.classList.remove('hidden');
+      if (progBox) progBox.classList.add('hidden');
+    }
+
+    async function startReceiptCamera(specificDeviceId = null) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('お使いのブラウザはカメラ撮影に対応していません', 'error');
+        return;
+      }
+
+      stopReceiptCamera();
+
+      try {
+        const videoConstraints = specificDeviceId
+          ? { deviceId: { exact: specificDeviceId } }
+          : { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 960 } };
+
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: false
+        });
+
+        const videoEl = document.getElementById('camera-video');
+        const boxEl = document.getElementById('camera-capture-box');
+        if (videoEl && boxEl) {
+          videoEl.srcObject = cameraStream;
+          boxEl.classList.remove('hidden');
+        }
+
+        // 複数カメラの確認
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        availableVideoDevices = devices.filter((d) => d.kind === 'videoinput');
+        const switchBtn = document.getElementById('switch-camera-btn');
+        if (switchBtn) {
+          if (availableVideoDevices.length > 1) {
+            switchBtn.classList.remove('hidden');
+          } else {
+            switchBtn.classList.add('hidden');
+          }
+        }
+      } catch (err) {
+        console.error('カメラ起動エラー:', err);
+        showToast('カメラを起動できませんでした。権限や接続を確認してください。', 'error');
+      }
+    }
+
+    function stopReceiptCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((t) => t.stop());
+        cameraStream = null;
+      }
+      const videoEl = document.getElementById('camera-video');
+      const boxEl = document.getElementById('camera-capture-box');
+      if (videoEl) videoEl.srcObject = null;
+      if (boxEl) boxEl.classList.add('hidden');
+    }
+
+    async function switchReceiptCamera() {
+      if (availableVideoDevices.length > 1) {
+        currentDeviceIndex = (currentDeviceIndex + 1) % availableVideoDevices.length;
+        await startReceiptCamera(availableVideoDevices[currentDeviceIndex].deviceId);
+      } else {
+        cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+        await startReceiptCamera();
+      }
+    }
+
+    function retakeReceiptCamera() {
+      clearReceiptImage();
+      startReceiptCamera();
+    }
+
+    async function captureReceiptPhoto() {
+      const videoEl = document.getElementById('camera-video');
+      const canvas = document.getElementById('camera-capture-canvas');
+      if (!videoEl || !canvas || !videoEl.videoWidth) {
+        showToast('映像フレームを取得できませんでした', 'error');
+        return;
+      }
+
+      canvas.width = videoEl.videoWidth;
+      canvas.height = videoEl.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      stopReceiptCamera();
+      setPreviewImageDataUrl(dataUrl);
+      showToast('撮影しました。OCR解析を開始します...', 'info');
+      await runReceiptOCR();
+    }
+
+    function buildEnhancedCanvasFromImage(imgEl, enhanceContrast) {
+      const canvas = document.createElement('canvas');
+      const maxDim = 1800;
+      let w = imgEl.naturalWidth || imgEl.width;
+      let h = imgEl.naturalHeight || imgEl.height;
+      if (w > maxDim || h > maxDim) {
+        const scale = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, w, h);
+
+      if (enhanceContrast) {
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        const contrast = 1.45;
+        const intercept = 128 * (1 - contrast);
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          let val = gray * contrast + intercept;
+          if (val < 0) val = 0;
+          if (val > 255) val = 255;
+          data[i] = data[i + 1] = data[i + 2] = val;
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+      return canvas;
+    }
+
+    async function runReceiptOCR() {
+      const imgEl = document.getElementById('receipt-preview-img');
+      if (!imgEl || !imgEl.src) {
+        showToast('先にレシート画像を選択または撮影してください', 'warning');
+        return;
+      }
+      if (typeof Tesseract === 'undefined') {
+        showToast('OCRライブラリが読み込まれていません。テキスト貼り付け解析をご利用ください。', 'error');
+        return;
+      }
+
+      const enhance = document.getElementById('ocr-enhance-contrast')?.checked ?? true;
+      const progBox = document.getElementById('ocr-progress-box');
+      const statusEl = document.getElementById('ocr-status-text');
+      const pctEl = document.getElementById('ocr-percent-text');
+      const barEl = document.getElementById('ocr-progress-bar');
+      const runBtn = document.getElementById('run-ocr-btn');
+
+      try {
+        if (runBtn) runBtn.disabled = true;
+        if (progBox) progBox.classList.remove('hidden');
+        if (statusEl) statusEl.textContent = '画像を準備中...';
+        if (pctEl) pctEl.textContent = '0%';
+        if (barEl) barEl.style.width = '0%';
+
+        const targetCanvas = buildEnhancedCanvasFromImage(imgEl, enhance);
+
+        const result = await Tesseract.recognize(targetCanvas, 'jpn+eng', {
+          logger: (m) => {
+            if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+              const p = Math.round(m.progress * 100);
+              if (statusEl) statusEl.textContent = 'レシート文字を認識中...';
+              if (pctEl) pctEl.textContent = `${p}%`;
+              if (barEl) barEl.style.width = `${p}%`;
+            } else if (m.status) {
+              if (statusEl) statusEl.textContent = `OCR処理中 (${m.status})...`;
+            }
+          }
+        });
+
+        const rawText = result?.data?.text || '';
+        const textArea = document.getElementById('receipt-raw-text');
+        if (textArea) textArea.value = rawText.trim();
+
+        if (rawText.trim()) {
+          parseReceiptTextToForm(rawText);
+          showToast('OCR読取が完了し、明細へ反映しました', 'success');
+        } else {
+          showToast('文字が検出できませんでした。テキスト欄に手入力して解析することもできます。', 'warning');
+        }
+      } catch (err) {
+        console.error('OCRエラー:', err);
+        showToast('OCR解析中にエラーが発生しました', 'error');
+      } finally {
+        if (runBtn) runBtn.disabled = false;
+      }
+    }
+
+    function insertSampleReceiptText() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const sample = [
+        `${yyyy}/${mm}/${dd} ライフ 駅前店`,
+        '国産豚こま切れ 540',
+        'キャベツ 198',
+        '特濃牛乳 218',
+        'ボックスティッシュ 398'
+      ].join('\n');
+      const ta = document.getElementById('receipt-raw-text');
+      if (ta) ta.value = sample;
+    }
+
+    function guessCategoryByItemName(itemName) {
+      const lower = itemName.toLowerCase();
+      const rules = [
+        { keywords: ['牛乳', '卵', 'チーズ', 'ヨーグルト', 'パン', 'バター'], maj: 'maj_food', med: 'med_grocery', min: 'min_dairy' },
+        { keywords: ['肉', '豚', '牛', '鶏', '魚', '鮭', 'サーモン', 'エビ', '刺身'], maj: 'maj_food', med: 'med_grocery', min: 'min_meat' },
+        { keywords: ['野菜', 'キャベツ', 'トマト', 'ねぎ', '玉ねぎ', '人参', '果物', 'りんご', 'バナナ'], maj: 'maj_food', med: 'med_grocery', min: 'min_veggie' },
+        { keywords: ['醤油', '味噌', '砂糖', '塩', '油', 'ソース', '米', 'パスタ'], maj: 'maj_food', med: 'med_grocery', min: 'min_seasoning' },
+        { keywords: ['コーヒー', 'カフェ', 'ケーキ', 'ラテ', '紅茶', 'スイーツ'], maj: 'maj_food', med: 'med_eating_out', min: 'min_cafe' },
+        { keywords: ['ランチ', '定食', '弁当', 'カレー', 'ラーメン'], maj: 'maj_food', med: 'med_eating_out', min: 'min_lunch' },
+        { keywords: ['洗剤', '柔軟剤', '漂白剤', 'スポンジ'], maj: 'maj_daily', med: 'med_household', min: 'min_detergent' },
+        { keywords: ['ティッシュ', 'トイレットペーパー', 'ラップ', 'ごみ袋'], maj: 'maj_daily', med: 'med_household', min: 'min_paper' },
+        { keywords: ['薬', 'サプリ', 'マスク', '絆創膏', 'ビタミン'], maj: 'maj_daily', med: 'med_health_beauty', min: 'min_medicine' },
+        { keywords: ['シャンプー', '化粧水', '乳液', '歯ブラシ'], maj: 'maj_daily', med: 'med_health_beauty', min: 'min_cosmetics' }
+      ];
+
+      for (const r of rules) {
+        if (r.keywords.some((k) => lower.includes(k.toLowerCase()))) {
+          return { majorId: r.maj, mediumId: r.med, minorId: r.min };
+        }
+      }
+      return {
+        majorId: appState.categories[0]?.id || '',
+        mediumId: appState.categories[0]?.mediums[0]?.id || '',
+        minorId: appState.categories[0]?.mediums[0]?.minors[0]?.id || ''
+      };
+    }
+
+    function parseReceiptTextToForm(overrideText = null) {
+      const raw = overrideText !== null ? overrideText : (document.getElementById('receipt-raw-text')?.value || '');
+      const lines = raw
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      if (lines.length === 0) {
+        showToast('解析するレシートテキストを入力してください', 'warning');
+        return;
+      }
+
+      // 日付抽出 (YYYY/MM/DD or YYYY-MM-DD)
+      let foundDate = '';
+      for (const line of lines) {
+        const m = line.match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
+        if (m) {
+          foundDate = `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+          break;
+        }
+      }
+      if (foundDate) {
+        document.getElementById('form-date').value = foundDate;
+      }
+
+      // 店舗名推定（既知店舗の一致 or 1行目から金額を除いた文字列）
+      let foundStore = '';
+      for (const line of lines.slice(0, 4)) {
+        for (const s of appState.stores) {
+          if (line.includes(s)) {
+            foundStore = s;
+            break;
+          }
+        }
+        if (foundStore) break;
+      }
+      if (!foundStore && lines[0]) {
+        const candidate = lines[0]
+          .replace(/\d{4}[\/\-年]\d{1,2}[\/\-月]\d{1,2}日?/g, '')
+          .replace(/[¥￥]?\s*[\d,]+円?/g, '')
+          .trim();
+        if (candidate && candidate.length <= 40) {
+          foundStore = candidate;
+        }
+      }
+      if (foundStore) {
+        document.getElementById('form-store').value = foundStore;
+      }
+
+      // 商品行抽出（行末または行内の金額を抽出）
+      const parsedItems = [];
+      const skipWords = ['合計', '小計', '消費税', '外税', '内税', 'お預り', 'お釣り', '釣銭', 'ポイント', 'total'];
+
+      for (const line of lines) {
+        if (skipWords.some((w) => line.toLowerCase().includes(w))) continue;
+        // 日付のみの行はスキップ
+        if (/^\d{4}[\/\-年]\d{1,2}[\/\-月]\d{1,2}日?$/.test(line)) continue;
+
+        const priceMatch = line.match(/[¥￥]?\s*([\d,]{1,8})\s*円?\s*$/);
+        if (!priceMatch) continue;
+
+        const price = Number(priceMatch[1].replace(/,/g, ''));
+        if (!Number.isFinite(price) || price <= 0 || price > 10000000) continue;
+
+        const namePart = line
+          .slice(0, priceMatch.index)
+          .replace(/[¥￥]/g, '')
+          .replace(/\*+$/g, '')
+          .trim();
+
+        if (!namePart) continue;
+        const cats = guessCategoryByItemName(namePart);
+        parsedItems.push({
+          name: namePart,
+          price,
+          majorId: cats.majorId,
+          mediumId: cats.mediumId,
+          minorId: cats.minorId
+        });
+      }
+
+      if (parsedItems.length === 0) {
+        showToast('商品名と金額のペアを検出できませんでした', 'warning');
+        return;
+      }
+
+      const container = document.getElementById('item-rows-container');
+      container.innerHTML = '';
+      for (const itm of parsedItems) {
+        addItemRow(itm);
+      }
+      updateFormTotal();
+      showToast(`${parsedItems.length}件の商品を明細に反映しました`, 'success');
+    }
+
+    // =========================================================================
+    // 8. マスタ管理モーダル（大・中・小分類 / 購入先 / 支払方法）
+    // =========================================================================
+    function openMasterModal(initialTab = 'categories') {
+      const modal = document.getElementById('master-modal');
+      if (!modal) return;
+      if (!masterSelectedMajorId && appState.categories.length > 0) {
+        masterSelectedMajorId = appState.categories[0].id;
+      }
+      const maj = appState.categories.find((c) => c.id === masterSelectedMajorId) || appState.categories[0];
+      if (maj) {
+        masterSelectedMajorId = maj.id;
+        if (!masterSelectedMediumId || !maj.mediums.some((m) => m.id === masterSelectedMediumId)) {
+          masterSelectedMediumId = maj.mediums[0]?.id || null;
+        }
+      }
+
+      switchMasterTab(initialTab);
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeMasterModal() {
+      const modal = document.getElementById('master-modal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      renderAll();
+    }
+
+    function switchMasterTab(tabName) {
+      ['categories', 'stores', 'payments'].forEach((t) => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const pane = document.getElementById(`master-tab-${t}`);
+        if (btn) btn.classList.toggle('tab-active', t === tabName);
+        if (pane) pane.classList.toggle('hidden', t !== tabName);
+      });
+
+      if (tabName === 'categories') renderMasterCategories();
+      if (tabName === 'stores') renderMasterStores();
+      if (tabName === 'payments') renderMasterPayments();
+    }
+
+    function renderMasterCategories() {
+      const majList = document.getElementById('master-major-list');
+      const medList = document.getElementById('master-medium-list');
+      const minList = document.getElementById('master-minor-list');
+      const majCountEl = document.getElementById('master-major-count');
+      const majLabelEl = document.getElementById('selected-major-label');
+      const medLabelEl = document.getElementById('selected-medium-label');
+
+      majCountEl.textContent = `${appState.categories.length}件`;
+
+      majList.innerHTML = appState.categories
+        .map((maj) => {
+          const active = maj.id === masterSelectedMajorId;
+          return `
+            <div data-action="select-major" data-id="${escapeAttr(maj.id)}" class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition ${active ? 'bg-brand-50 border border-brand-300 text-brand-800 font-bold' : 'hover:bg-slate-50 text-slate-700 border border-transparent'}">
+              <span class="text-xs truncate">${escapeHtml(maj.name)}</span>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" data-action="rename-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
+                  <i class="fa-solid fa-pen text-[11px]"></i>
+                </button>
+                <button type="button" data-action="delete-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
+                  <i class="fa-solid fa-trash text-[11px]"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      const selectedMaj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+      if (!selectedMaj) {
+        majLabelEl.textContent = '';
+        medLabelEl.textContent = '';
+        medList.innerHTML = `<div class="text-xs text-slate-400 p-2">大分類を選択してください</div>`;
+        minList.innerHTML = `<div class="text-xs text-slate-400 p-2">中分類を選択してください</div>`;
+        return;
+      }
+
+      majLabelEl.textContent = `(${selectedMaj.name})`;
+
+      if (!selectedMaj.mediums.some((m) => m.id === masterSelectedMediumId)) {
+        masterSelectedMediumId = selectedMaj.mediums[0]?.id || null;
+      }
+
+      medList.innerHTML =
+        selectedMaj.mediums.length === 0
+          ? `<div class="text-xs text-slate-400 p-2">中分類がありません</div>`
+          : selectedMaj.mediums
+              .map((med) => {
+                const active = med.id === masterSelectedMediumId;
+                return `
+                  <div data-action="select-medium" data-id="${escapeAttr(med.id)}" class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition ${active ? 'bg-brand-50 border border-brand-300 text-brand-800 font-bold' : 'hover:bg-slate-50 text-slate-700 border border-transparent'}">
+                    <span class="text-xs truncate">${escapeHtml(med.name)}</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button type="button" data-action="rename-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
+                        <i class="fa-solid fa-pen text-[11px]"></i>
+                      </button>
+                      <button type="button" data-action="delete-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
+                        <i class="fa-solid fa-trash text-[11px]"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              })
+              .join('');
+
+      const selectedMed = selectedMaj.mediums.find((m) => m.id === masterSelectedMediumId);
+      if (!selectedMed) {
+        medLabelEl.textContent = '';
+        minList.innerHTML = `<div class="text-xs text-slate-400 p-2">中分類を選択してください</div>`;
+        return;
+      }
+
+      medLabelEl.textContent = `(${selectedMed.name})`;
+
+      minList.innerHTML =
+        selectedMed.minors.length === 0
+          ? `<div class="text-xs text-slate-400 p-2">小分類がありません</div>`
+          : selectedMed.minors
+              .map((min) => {
+                return `
+                  <div class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 hover:bg-slate-50 text-slate-700 border border-transparent">
+                    <span class="text-xs truncate">${escapeHtml(min.name)}</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button type="button" data-action="rename-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
+                        <i class="fa-solid fa-pen text-[11px]"></i>
+                      </button>
+                      <button type="button" data-action="delete-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
+                        <i class="fa-solid fa-trash text-[11px]"></i>
+                      </button>
+                    </div>
+                  </div>
+                `;
+              })
+              .join('');
+    }
+
+    function selectMasterMajor(majId) {
+      masterSelectedMajorId = majId;
+      const maj = appState.categories.find((c) => c.id === majId);
+      masterSelectedMediumId = maj?.mediums[0]?.id || null;
+      renderMasterCategories();
+    }
+
+    function selectMasterMedium(medId) {
+      masterSelectedMediumId = medId;
+      renderMasterCategories();
+    }
+
+    function addMajorCategory() {
+      const input = document.getElementById('new-major-name');
+      const name = sanitizeText(input?.value, 60);
+      if (!name) {
+        showToast('大分類名を入力してください', 'warning');
+        return;
+      }
+      const newMaj = {
+        id: uid('maj'),
+        name,
+        mediums: [
+          {
+            id: uid('med'),
+            name: '一般',
+            minors: [{ id: uid('min'), name: 'その他' }]
+          }
+        ]
+      };
+      appState.categories.push(newMaj);
+      masterSelectedMajorId = newMaj.id;
+      masterSelectedMediumId = newMaj.mediums[0].id;
+      input.value = '';
+      saveState(false);
+      renderMasterCategories();
+      showToast(`大分類「${name}」を追加しました`, 'success');
+    }
+
+    function addMediumCategory() {
+      const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+      if (!maj) {
+        showToast('先に大分類を選択してください', 'warning');
+        return;
+      }
+      const input = document.getElementById('new-medium-name');
+      const name = sanitizeText(input?.value, 60);
+      if (!name) {
+        showToast('中分類名を入力してください', 'warning');
+        return;
+      }
+      const newMed = {
+        id: uid('med'),
+        name,
+        minors: [{ id: uid('min'), name: 'その他' }]
+      };
+      maj.mediums.push(newMed);
+      masterSelectedMediumId = newMed.id;
+      input.value = '';
+      saveState(false);
+      renderMasterCategories();
+      showToast(`中分類「${name}」を追加しました`, 'success');
+    }
+
+    function addMinorCategory() {
+      const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+      const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
+      if (!med) {
+        showToast('先に中分類を選択してください', 'warning');
+        return;
+      }
+      const input = document.getElementById('new-minor-name');
+      const name = sanitizeText(input?.value, 60);
+      if (!name) {
+        showToast('小分類名を入力してください', 'warning');
+        return;
+      }
+      med.minors.push({ id: uid('min'), name });
+      input.value = '';
+      saveState(false);
+      renderMasterCategories();
+      showToast(`小分類「${name}」を追加しました`, 'success');
+    }
+
+    async function renameCategory(level, id) {
+      let targetObj = null;
+      if (level === 'major') {
+        targetObj = appState.categories.find((c) => c.id === id);
+      } else if (level === 'medium') {
+        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+        targetObj = maj?.mediums.find((m) => m.id === id);
+      } else if (level === 'minor') {
+        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+        const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
+        targetObj = med?.minors.find((s) => s.id === id);
+      }
+      if (!targetObj) return;
+
+      const nextName = await showPromptModal('新しい分類名を入力', targetObj.name);
+      if (!nextName) return;
+      targetObj.name = sanitizeText(nextName, 60, targetObj.name);
+      saveState(false);
+      renderMasterCategories();
+      showToast('分類名を変更しました', 'success');
+    }
+
+    async function deleteCategory(level, id) {
+      if (level === 'major') {
+        if (appState.categories.length <= 1) {
+          showToast('最低1つの大分類が必要です', 'warning');
+          return;
+        }
+        const ok = await showConfirm('大分類の削除', 'この大分類（および配下の中・小分類）を削除しますか？', '削除する');
+        if (!ok) return;
+        appState.categories = appState.categories.filter((c) => c.id !== id);
+        if (masterSelectedMajorId === id) {
+          masterSelectedMajorId = appState.categories[0]?.id || null;
+          masterSelectedMediumId = appState.categories[0]?.mediums[0]?.id || null;
+        }
+      } else if (level === 'medium') {
+        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+        if (!maj) return;
+        const ok = await showConfirm('中分類の削除', 'この中分類（および配下の小分類）を削除しますか？', '削除する');
+        if (!ok) return;
+        maj.mediums = maj.mediums.filter((m) => m.id !== id);
+        if (masterSelectedMediumId === id) {
+          masterSelectedMediumId = maj.mediums[0]?.id || null;
+        }
+      } else if (level === 'minor') {
+        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
+        const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
+        if (!med) return;
+        const ok = await showConfirm('小分類の削除', 'この小分類を削除しますか？', '削除する');
+        if (!ok) return;
+        med.minors = med.minors.filter((s) => s.id !== id);
+      }
+
+      saveState(false);
+      renderMasterCategories();
+      showToast('削除しました', 'success');
+    }
+
+    // 購入先マスタ
+    function renderMasterStores() {
+      const listEl = document.getElementById('master-store-list');
+      if (!listEl) return;
+      if (appState.stores.length === 0) {
+        listEl.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">登録された購入先はありません</div>`;
+        return;
+      }
+      listEl.innerHTML = appState.stores
+        .map(
+          (store, idx) => `
+          <div class="py-2.5 flex items-center justify-between gap-2">
+            <span class="text-sm font-medium text-slate-800">${escapeHtml(store)}</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-action="rename-store" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
+              <button type="button" data-action="delete-store" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+    }
+
+    function addStoreMaster() {
+      const input = document.getElementById('new-store-name');
+      const name = sanitizeText(input?.value, 80);
+      if (!name) {
+        showToast('購入先名を入力してください', 'warning');
+        return;
+      }
+      if (!appState.stores.includes(name)) {
+        appState.stores.unshift(name);
+        saveState(false);
+        renderMasterStores();
+        populateMasterSelects();
+      }
+      input.value = '';
+      showToast(`購入先「${name}」を追加しました`, 'success');
+    }
+
+    async function renameStoreMaster(idx) {
+      const current = appState.stores[idx];
+      if (current === undefined) return;
+      const nextName = await showPromptModal('購入先名を変更', current);
+      if (!nextName) return;
+      appState.stores[idx] = sanitizeText(nextName, 80, current);
+      saveState(false);
+      renderMasterStores();
+      populateMasterSelects();
+      showToast('購入先名を変更しました', 'success');
+    }
+
+    async function deleteStoreMaster(idx) {
+      const target = appState.stores[idx];
+      if (target === undefined) return;
+      const ok = await showConfirm('購入先の削除', `購入先「${target}」を一覧から削除しますか？`, '削除する');
+      if (!ok) return;
+      appState.stores.splice(idx, 1);
+      saveState(false);
+      renderMasterStores();
+      populateMasterSelects();
+      showToast('購入先を削除しました', 'success');
+    }
+
+    // 支払方法マスタ
+    function renderMasterPayments() {
+      const listEl = document.getElementById('master-payment-list');
+      if (!listEl) return;
+      if (appState.payments.length === 0) {
+        listEl.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">登録された支払方法はありません</div>`;
+        return;
+      }
+      listEl.innerHTML = appState.payments
+        .map(
+          (pay, idx) => `
+          <div class="py-2.5 flex items-center justify-between gap-2">
+            <span class="text-sm font-medium text-slate-800">${escapeHtml(pay)}</span>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-action="rename-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
+              <button type="button" data-action="delete-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+    }
+
+    function addPaymentMaster() {
+      const input = document.getElementById('new-payment-name');
+      const name = sanitizeText(input?.value, 60);
+      if (!name) {
+        showToast('支払方法名を入力してください', 'warning');
+        return;
+      }
+      if (!appState.payments.includes(name)) {
+        appState.payments.push(name);
+        saveState(false);
+        renderMasterPayments();
+        populateMasterSelects();
+      }
+      input.value = '';
+      showToast(`支払方法「${name}」を追加しました`, 'success');
+    }
+
+    async function renamePaymentMaster(idx) {
+      const current = appState.payments[idx];
+      if (current === undefined) return;
+      const nextName = await showPromptModal('支払方法名を変更', current);
+      if (!nextName) return;
+      appState.payments[idx] = sanitizeText(nextName, 60, current);
+      saveState(false);
+      renderMasterPayments();
+      populateMasterSelects();
+      showToast('支払方法名を変更しました', 'success');
+    }
+
+    async function deletePaymentMaster(idx) {
+      if (appState.payments.length <= 1) {
+        showToast('最低1つの支払方法が必要です', 'warning');
+        return;
+      }
+      const target = appState.payments[idx];
+      if (target === undefined) return;
+      const ok = await showConfirm('支払方法の削除', `支払方法「${target}」を削除しますか？`, '削除する');
+      if (!ok) return;
+      appState.payments.splice(idx, 1);
+      saveState(false);
+      renderMasterPayments();
+      populateMasterSelects();
+      showToast('支払方法を削除しました', 'success');
+    }
+
+    async function quickAddMaster(type) {
+      if (type === 'stores') {
+        const name = await showPromptModal('新しい購入先（店舗名）を追加');
+        if (!name) return;
+        const clean = sanitizeText(name, 80);
+        if (!appState.stores.includes(clean)) appState.stores.unshift(clean);
+        saveState(false);
+        populateMasterSelects();
+        document.getElementById('form-store').value = clean;
+        showToast(`購入先「${clean}」を追加しました`, 'success');
+      } else if (type === 'payments') {
+        const name = await showPromptModal('新しい支払方法を追加');
+        if (!name) return;
+        const clean = sanitizeText(name, 60);
+        if (!appState.payments.includes(clean)) appState.payments.push(clean);
+        saveState(false);
+        populateMasterSelects();
+        document.getElementById('form-payment').value = clean;
+        showToast(`支払方法「${clean}」を追加しました`, 'success');
+      }
+    }
+
+    // =========================================================================
+    // 9. データ管理（CSV出力・JSONバックアップ/復元・サンプル再投入・全消去）
+    // =========================================================================
+    function exportCSV() {
+      const rows = [['購入日', '購入先', '支払方法', '大分類', '中分類', '小分類', '商品名', '金額', 'レシートメモ']];
+      for (const rec of appState.receipts) {
+        for (const itm of rec.items || []) {
+          const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
+          rows.push([
+            rec.date,
+            rec.store,
+            rec.payment,
+            names.majorName,
+            names.mediumName,
+            names.minorName,
+            itm.name,
+            Number(itm.price) || 0,
+            rec.memo || ''
+          ]);
+        }
+      }
+
+      const csvContent = rows
+        .map((r) =>
+          r
+            .map((cell) => {
+              const s = String(cell ?? '').replace(/"/g, '""');
+              return `"${s}"`;
+            })
+            .join(',')
+        )
+        .join('\r\n');
+
+      const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+      const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kakeibo_${currentMonth || 'all'}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSVファイルをダウンロードしました', 'success');
+    }
+
+    function exportJSON() {
+      const payload = JSON.stringify(appState, null, 2);
+      const blob = new Blob([payload], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kakeibo_backup_${currentMonth || 'data'}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSONバックアップを保存しました', 'success');
+    }
+
+    function importJSON(event) {
+      const file = event.target?.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const raw = JSON.parse(e.target.result);
+          const clean = sanitizeImportedState(raw);
+          if (!clean) {
+            showToast('有効な家計簿JSONデータではありませんでした', 'error');
+            return;
+          }
+          const ok = await showConfirm('バックアップの復元', '現在のデータを上書きしてJSONバックアップから復元しますか？', '復元する');
+          if (!ok) return;
+          appState = clean;
+          saveState(false);
+          resetReceiptForm();
+          renderAll();
+          showToast('バックアップから復元しました', 'success');
+        } catch (err) {
+          console.error('JSON復元エラー:', err);
+          showToast('JSONファイルの読み込みに失敗しました', 'error');
+        } finally {
+          event.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function resetToSampleData() {
+      const ok = await showConfirm('サンプルデータの再投入', '現在のデータを破棄して初期サンプルデータに戻しますか？', '再投入する');
+      if (!ok) return;
+      appState = createDefaultData();
+      saveState(false);
+      setTodayMonth();
+      resetReceiptForm();
+      showToast('サンプルデータを再投入しました', 'success');
+    }
+
+    async function clearAllData() {
+      const ok = await showConfirm('全データの初期化', 'すべての購入履歴・購入先・支払方法を初期状態（空の履歴）にリセットしますか？', '初期化する');
+      if (!ok) return;
+      const base = createDefaultData();
+      appState = {
+        categories: base.categories,
+        stores: base.stores,
+        payments: base.payments,
+        receipts: []
+      };
+      saveState(false);
+      resetReceiptForm();
+      renderAll();
+      showToast('購入履歴を初期化しました', 'success');
+    }
+
+    // =========================================================================
+    // 10. イベント委譲（XSS対策）・メニュー制御＆アプリ起動エントリーポイント
+    // =========================================================================
+    function toggleDataMenu(event) {
+      if (event) event.stopPropagation();
+      const dropdown = document.getElementById('data-menu-dropdown');
+      if (!dropdown) return;
+      dropdown.classList.toggle('hidden');
+    }
+
+    function closeDataMenu() {
+      const dropdown = document.getElementById('data-menu-dropdown');
+      if (!dropdown) return;
+      dropdown.classList.add('hidden');
+    }
+
+    function setupDelegatedEvents() {
+      document.addEventListener('click', (e) => {
+        // データ管理メニュー外をクリックした場合は閉じる
+        const menuContainer = document.getElementById('data-menu-container');
+        if (menuContainer && !menuContainer.contains(e.target)) {
+          closeDataMenu();
+        }
+
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        if (action === 'toggle-node') {
+          toggleCategoryNode(target.dataset.key);
+        } else if (action === 'edit-receipt') {
+          editReceipt(target.dataset.id);
+        } else if (action === 'delete-receipt') {
+          deleteReceipt(target.dataset.id);
+        } else if (action === 'remove-row') {
+          removeItemRow(target.dataset.rowId);
+        } else if (action === 'select-major') {
+          selectMasterMajor(target.dataset.id);
+        } else if (action === 'select-medium') {
+          selectMasterMedium(target.dataset.id);
+        } else if (action === 'rename-cat') {
+          e.stopPropagation();
+          renameCategory(target.dataset.level, target.dataset.id);
+        } else if (action === 'delete-cat') {
+          e.stopPropagation();
+          deleteCategory(target.dataset.level, target.dataset.id);
+        } else if (action === 'rename-store') {
+          renameStoreMaster(Number(target.dataset.idx));
+        } else if (action === 'delete-store') {
+          deleteStoreMaster(Number(target.dataset.idx));
+        } else if (action === 'rename-payment') {
+          renamePaymentMaster(Number(target.dataset.idx));
+        } else if (action === 'delete-payment') {
+          deletePaymentMaster(Number(target.dataset.idx));
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      setupDelegatedEvents();
+      setupDragAndDrop();
+      setTodayMonth();
+      resetReceiptForm();
+    });
   </script>
 </body>
 </html>
