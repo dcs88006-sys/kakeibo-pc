@@ -38,7 +38,6 @@
     }
   </script>
   <style>
-    /* カスタムスクロールバー */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -63,9 +62,9 @@
 <body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-brand-100 selection:text-brand-700">
 
   <!-- 通知トーストコンテナ -->
-  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none max-w-md w-[92%]"></div>
 
-  <!-- 確認ダイアログモーダル (confirm()の代替) -->
+  <!-- 確認ダイアログモーダル -->
   <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
       <div class="flex items-center gap-3 text-amber-600 mb-3">
@@ -130,19 +129,16 @@
     </div>
   </header>
 
-  <!-- メイン2カラムレイアウト (PC: 左62% / 右38%) -->
+  <!-- メイン2カラムレイアウト -->
   <main class="max-w-[1600px] mx-auto p-3 sm:p-4 lg:p-5">
     <div class="flex flex-col lg:flex-row gap-5 items-start">
 
-      <!-- =========================================================
-           左側：メインエリア（月次集計ダッシュボード＆購入履歴） 約62%
-           ========================================================= -->
+      <!-- 左側：メインエリア -->
       <section class="w-full lg:w-[62%] flex flex-col gap-5">
 
         <!-- 月次切り替え＆サマリーバー -->
         <div class="bg-white rounded-xl shadow-xs border border-slate-200 p-4">
           <div class="flex flex-wrap items-center justify-between gap-4">
-            <!-- 年月セレクター -->
             <div class="flex items-center gap-2">
               <button type="button" onclick="changeMonth(-1)" class="w-9 h-9 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition" title="前月">
                 <i class="fa-solid fa-chevron-left"></i>
@@ -159,7 +155,6 @@
               </button>
             </div>
 
-            <!-- 月間KPIサマリー -->
             <div class="flex items-center gap-4 sm:gap-6">
               <div>
                 <div class="text-[11px] text-slate-500 font-medium">月間支出合計</div>
@@ -176,7 +171,7 @@
           </div>
         </div>
 
-        <!-- 3階層集計パネル（大分類 ＞ 中分類 ＞ 小分類） -->
+        <!-- 3階層集計パネル -->
         <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
             <div class="flex items-center gap-2">
@@ -194,14 +189,10 @@
           </div>
 
           <div class="p-4 grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
-            <!-- 左：階層アコーディオン集計テーブル (7カラム) -->
             <div class="xl:col-span-7">
-              <div id="category-hierarchy-container" class="space-y-2">
-                <!-- JSで動的に描画 -->
-              </div>
+              <div id="category-hierarchy-container" class="space-y-2"></div>
             </div>
 
-            <!-- 右：大分類ドーナツグラフ＆支払方法別集計 (5カラム) -->
             <div class="xl:col-span-5 flex flex-col gap-4">
               <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
                 <h3 class="text-xs font-bold text-slate-600 mb-2 flex items-center justify-between">
@@ -214,20 +205,17 @@
                 </div>
               </div>
 
-              <!-- 支払方法別集計 -->
               <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/80">
                 <h3 class="text-xs font-bold text-slate-600 mb-2.5 flex items-center gap-1.5">
                   <i class="fa-regular fa-credit-card text-brand-600"></i> 支払方法別 集計
                 </h3>
-                <div id="payment-summary-container" class="space-y-2">
-                  <!-- JSで動的に描画 -->
-                </div>
+                <div id="payment-summary-container" class="space-y-2"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 購入履歴一覧（レシート単位 / 明細検索・絞り込み） -->
+        <!-- 購入履歴一覧 -->
         <div class="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
@@ -236,7 +224,6 @@
               <span id="history-count-badge" class="text-xs bg-brand-100 text-brand-700 font-semibold px-2 py-0.5 rounded-full">0件</span>
             </div>
 
-            <!-- フィルター・検索バー -->
             <div class="flex flex-wrap items-center gap-2">
               <div class="relative">
                 <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-2.5 top-1/2 -translate-y-1/2"></i>
@@ -251,18 +238,13 @@
             </div>
           </div>
 
-          <div id="receipt-history-list" class="divide-y divide-slate-200 max-h-[650px] overflow-y-auto">
-            <!-- JSで動的に描画 -->
-          </div>
+          <div id="receipt-history-list" class="divide-y divide-slate-200 max-h-[650px] overflow-y-auto"></div>
         </div>
 
       </section>
 
-      <!-- =========================================================
-           右側：固定パネル（1回の購入の登録・レシート読込） 約38%
-           ========================================================= -->
+      <!-- 右側：固定パネル（1回の購入の登録・レシート読込） -->
       <aside class="w-full lg:w-[38%] lg:sticky lg:top-[72px] bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-        <!-- パネルヘッダー -->
         <div id="entry-panel-header" class="px-4 py-3 bg-brand-600 text-white flex items-center justify-between">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-cart-plus text-lg"></i>
@@ -278,7 +260,7 @@
 
         <div class="p-4 max-h-[calc(100vh-135px)] overflow-y-auto space-y-4">
 
-          <!-- レシート読込みアコーディオン / エリア -->
+          <!-- レシート読込みアコーディオン -->
           <div class="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden">
             <button type="button" onclick="toggleReceiptReader()" class="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-slate-100/80 transition">
               <div class="flex items-center gap-2">
@@ -286,15 +268,14 @@
                   <i class="fa-solid fa-camera"></i>
                 </span>
                 <div>
-                  <div class="text-xs font-bold text-slate-800">レシート読込み・自動入力（OCR / テキスト解析）</div>
-                  <div class="text-[10px] text-slate-500">画像アップロードまたは明細テキスト貼付で自動明細化</div>
+                  <div class="text-xs font-bold text-slate-800">レシート読込み・自動入力（AI / OCR / テキスト解析）</div>
+                  <div class="text-[10px] text-slate-500">画像アップロードまたはカメラ撮影で自動明細化</div>
                 </div>
               </div>
               <i id="receipt-reader-chevron" class="fa-solid fa-chevron-down text-xs text-slate-400 transition-transform"></i>
             </button>
 
             <div id="receipt-reader-body" class="hidden px-3.5 pb-3.5 pt-1 border-t border-slate-200/80 space-y-3">
-              <!-- 画像アップロード＆Webカメラ起動ボタン -->
               <div class="grid grid-cols-2 gap-2">
                 <button type="button" onclick="document.getElementById('receipt-image-input').click()" class="py-2 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
                   <i class="fa-solid fa-folder-open text-brand-600"></i>
@@ -306,11 +287,10 @@
                 </button>
               </div>
 
-              <!-- Webカメラ ライブプレビュー＆撮影エリア -->
+              <!-- Webカメラ ライブプレビュー -->
               <div id="camera-capture-box" class="hidden bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-inner">
                 <div class="relative aspect-4/3 bg-black flex items-center justify-center overflow-hidden">
                   <video id="camera-video" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                  <!-- レシート位置合わせガイド枠オーバーレイ -->
                   <div class="absolute inset-4 border-2 border-dashed border-emerald-400/80 rounded-lg pointer-events-none flex flex-col justify-between p-2">
                     <span class="self-start bg-black/60 text-emerald-300 text-[10px] font-medium px-2 py-0.5 rounded">
                       レシートの枠を合わせてください
@@ -319,33 +299,30 @@
                       明るい場所で水平に撮影
                     </span>
                   </div>
-                  <!-- カメラ切り替えボタン（複数カメラ搭載端末向け） -->
                   <button type="button" id="switch-camera-btn" onclick="switchReceiptCamera()" class="hidden absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 text-white text-xs flex items-center justify-center transition" title="カメラ切替">
                     <i class="fa-solid fa-camera-rotate"></i>
                   </button>
                 </div>
-                <!-- シャッター＆閉じるコントロールバー -->
                 <div class="p-2.5 bg-slate-800 flex items-center justify-between gap-2">
                   <button type="button" onclick="stopReceiptCamera()" class="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium transition">
                     <i class="fa-solid fa-xmark mr-1"></i>閉じる
                   </button>
                   <button type="button" onclick="captureReceiptPhoto()" class="flex-1 py-2 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow transition cursor-pointer">
                     <i class="fa-solid fa-camera"></i>
-                    <span>シャッターを切る（撮影してOCR解析）</span>
+                    <span>シャッターを切る（撮影して解析）</span>
                   </button>
                 </div>
               </div>
               <canvas id="camera-capture-canvas" class="hidden"></canvas>
 
-              <!-- 画像ドロップ＆静止画プレビュー・OCRエリア -->
+              <!-- 画像ドロップ＆プレビュー -->
               <div id="drop-zone" onclick="document.getElementById('receipt-image-input').click()" class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-white rounded-lg p-3 text-center cursor-pointer transition">
                 <input type="file" id="receipt-image-input" accept="image/*" class="hidden" onchange="handleReceiptImageUpload(event)">
                 <div id="drop-zone-placeholder" class="py-1">
                   <i class="fa-solid fa-cloud-arrow-up text-xl text-brand-500 mb-1"></i>
                   <p class="text-xs font-medium text-slate-700">ドラッグ＆ドロップでレシート画像を追加</p>
-                  <p class="text-[10px] text-slate-400 mt-0.5">JPG / PNG 対応・画像を見ながら手入力やOCR読取が可能</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">JPG / PNG 対応・画像を見ながらAI解析やOCR読取が可能</p>
                 </div>
-                <!-- プレビュー＆OCR実行バー -->
                 <div id="receipt-preview-wrapper" class="hidden space-y-2" onclick="event.stopPropagation()">
                   <div class="relative max-h-48 overflow-auto rounded border border-slate-200 bg-slate-900/5">
                     <img id="receipt-preview-img" src="" alt="レシートプレビュー" class="mx-auto max-h-48 object-contain">
@@ -353,31 +330,41 @@
                       <i class="fa-solid fa-xmark"></i>
                     </button>
                   </div>
-                  <!-- OCR前処理オプション＆撮り直しバー -->
                   <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200/80">
                     <label class="inline-flex items-center gap-1.5 text-slate-700 font-medium cursor-pointer select-none">
                       <input type="checkbox" id="ocr-enhance-contrast" checked class="rounded text-indigo-600 focus:ring-indigo-500">
-                      <span>文字くっきり補正（高コントラスト化）</span>
+                      <span>文字くっきり補正（標準OCR用）</span>
                     </label>
                     <button type="button" onclick="retakeReceiptCamera()" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
                       <i class="fa-solid fa-rotate-right"></i> カメラで撮り直す
                     </button>
                   </div>
                   <div class="flex items-center justify-between gap-2">
-                    <button type="button" id="run-ocr-btn" onclick="runReceiptOCR()" class="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition cursor-pointer">
+                    <button type="button" id="run-ai-ocr-btn" onclick="runGeminiReceiptAnalysis()" class="flex-1 py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer">
                       <i class="fa-solid fa-wand-magic-sparkles"></i>
-                      <span>画像から文字を自動読取 (OCR)</span>
+                      <span>AI高精度解析 (Gemini)</span>
+                    </button>
+                    <button type="button" id="run-ocr-btn" onclick="runReceiptOCR()" class="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition cursor-pointer" title="APIキー不要のブラウザ内OCR">
+                      <i class="fa-solid fa-font"></i>
+                      <span>標準OCR</span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500 px-0.5">
+                    <span id="gemini-key-status-badge">Gemini APIキー: 未設定</span>
+                    <button type="button" onclick="openMasterModal('ai')" class="text-brand-600 hover:underline font-bold">
+                      <i class="fa-solid fa-key mr-0.5"></i>APIキー・モデル設定
                     </button>
                   </div>
                   <div id="ocr-progress-box" class="hidden">
                     <div class="flex justify-between text-[10px] text-indigo-700 font-medium mb-1">
-                      <span id="ocr-status-text">OCRエンジン初期化中...</span>
+                      <span id="ocr-status-text">解析中...</span>
                       <span id="ocr-percent-text">0%</span>
                     </div>
                     <div class="w-full bg-indigo-100 rounded-full h-1.5">
                       <div id="ocr-progress-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
                     </div>
                   </div>
+                  <div id="ai-error-detail-box" class="hidden text-left bg-rose-50 border border-rose-200 rounded-lg p-2 text-[11px] text-rose-700 break-all"></div>
                 </div>
               </div>
 
@@ -399,18 +386,16 @@
             </div>
           </div>
 
-          <!-- レシート基本情報フォーム（日付・購入先・支払方法） -->
+          <!-- レシート基本情報フォーム -->
           <form id="receipt-form" onsubmit="saveReceipt(event)" class="space-y-4">
             <input type="hidden" id="editing-receipt-id" value="">
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <!-- 購入日 -->
               <div>
                 <label class="block text-[11px] font-bold text-slate-600 mb-1">購入日 <span class="text-rose-500">*</span></label>
                 <input type="date" id="form-date" required class="w-full px-2.5 py-1.5 text-xs sm:text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
               </div>
 
-              <!-- 購入先（店舗名） -->
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-[11px] font-bold text-slate-600">購入先 <span class="text-rose-500">*</span></label>
@@ -420,7 +405,6 @@
                 <datalist id="store-datalist"></datalist>
               </div>
 
-              <!-- 支払方法 -->
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="text-[11px] font-bold text-slate-600">支払方法 <span class="text-rose-500">*</span></label>
@@ -431,7 +415,6 @@
               </div>
             </div>
 
-            <!-- 購入商品明細リスト -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
@@ -442,18 +425,14 @@
                 </button>
               </div>
 
-              <div id="item-rows-container" class="space-y-2.5">
-                <!-- 商品明細カードが動的に追加される -->
-              </div>
+              <div id="item-rows-container" class="space-y-2.5"></div>
             </div>
 
-            <!-- レシート全体メモ -->
             <div>
               <label class="block text-[11px] font-bold text-slate-600 mb-1">レシート全体メモ（任意）</label>
               <input type="text" id="form-memo" placeholder="例：週末のまとめ買い、ポイント5倍デー" class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
             </div>
 
-            <!-- 合計金額＆登録ボタン -->
             <div class="pt-3 border-t border-slate-200 sticky bottom-0 bg-white pb-1">
               <div class="flex items-center justify-between mb-3 px-1">
                 <span class="text-xs font-bold text-slate-600">レシート合計金額 (<span id="form-item-count">0</span>点)</span>
@@ -472,23 +451,19 @@
     </div>
   </main>
 
-  <!-- =========================================================
-       マスタ管理モーダル（大分類・中分類・小分類 / 購入先 / 支払方法）
-       ========================================================= -->
+  <!-- マスタ管理モーダル -->
   <div id="master-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 hidden items-center justify-center p-3 sm:p-5">
     <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
-      <!-- モーダルヘッダー -->
       <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-sliders text-brand-600 text-lg"></i>
-          <h3 class="font-bold text-base sm:text-lg text-slate-800">マスタ管理（追加・変更・削除）</h3>
+          <h3 class="font-bold text-base sm:text-lg text-slate-800">マスタ管理（追加・変更・削除・AI設定）</h3>
         </div>
         <button type="button" onclick="closeMasterModal()" class="w-8 h-8 rounded-lg text-slate-500 hover:bg-slate-200 flex items-center justify-center transition">
           <i class="fa-solid fa-xmark text-lg"></i>
         </button>
       </div>
 
-      <!-- タブ切り替え -->
       <div class="flex border-b border-slate-200 px-5 bg-white">
         <button type="button" id="tab-btn-categories" onclick="switchMasterTab('categories')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 tab-active transition">
           <i class="fa-solid fa-folder-tree mr-1.5"></i>分類階層（大・中・小）
@@ -499,9 +474,11 @@
         <button type="button" id="tab-btn-payments" onclick="switchMasterTab('payments')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 transition">
           <i class="fa-solid fa-credit-card mr-1.5"></i>支払方法
         </button>
+        <button type="button" id="tab-btn-ai" onclick="switchMasterTab('ai')" class="px-4 py-3 text-xs sm:text-sm text-slate-600 hover:text-brand-600 transition">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>AI設定 (Gemini)
+        </button>
       </div>
 
-      <!-- モーダルコンテンツ -->
       <div class="p-5 overflow-y-auto flex-1 bg-slate-50/50">
 
         <!-- 1. 分類階層管理タブ -->
@@ -511,7 +488,6 @@
             大分類を選択すると右側に中分類、さらに中分類を選択すると小分類が表示されます。それぞれの追加・名称変更・削除が可能です。
           </p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- 大分類カラム -->
             <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
               <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
                 <span>1. 大分類</span>
@@ -524,7 +500,6 @@
               <div id="master-major-list" class="flex-1 overflow-y-auto space-y-1"></div>
             </div>
 
-            <!-- 中分類カラム -->
             <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
               <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
                 <span>2. 中分類 <span id="selected-major-label" class="text-brand-600"></span></span>
@@ -536,7 +511,6 @@
               <div id="master-medium-list" class="flex-1 overflow-y-auto space-y-1"></div>
             </div>
 
-            <!-- 小分類カラム -->
             <div class="bg-white rounded-xl border border-slate-200 p-3 flex flex-col h-[400px]">
               <h4 class="text-xs font-bold text-slate-700 mb-2 pb-1.5 border-b border-slate-100 flex items-center justify-between">
                 <span>3. 小分類 <span id="selected-medium-label" class="text-brand-600"></span></span>
@@ -574,12 +548,55 @@
           </div>
         </div>
 
-      </div>
+        <!-- 4. Gemini AI設定タブ -->
+        <div id="master-tab-ai" class="hidden space-y-4 max-w-xl mx-auto">
+          <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+            <div class="flex items-center gap-2 text-brand-700">
+              <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+              <h4 class="text-sm font-bold text-slate-800">Gemini APIキー・使用モデル設定</h4>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Google AI Studio で取得した Gemini APIキーを設定すると、レシート画像から<strong>購入日・店舗名・正確な商品名・金額・大中小カテゴリーの自動仕分け</strong>を一括で高精度に解析できます。
+            </p>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Gemini API キー</label>
+              <div class="flex gap-2">
+                <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:border-brand-500 font-mono">
+                <button type="button" onclick="toggleGeminiKeyVisibility()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-lg" title="表示切替">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-700">使用モデル（APIキーの契約ティアに合わせて選択）</label>
+              <select id="gemini-model-select" onchange="onGeminiModelSelectChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
+                <option value="auto">自動選択（無料枠・有料枠を自動判定して接続 / おすすめ）</option>
+                <option value="gemini-4-hydrogen">gemini-4-hydrogen（Gemini 4 軽量・高速）</option>
+                <option value="gemini-4-neon">gemini-4-neon（Gemini 4 バランス型）</option>
+                <option value="gemini-4-carbon">gemini-4-carbon（Gemini 4 高精度推論）</option>
+                <option value="gemini-3-flash-preview">gemini-3-flash-preview（Gemini 3 Flash）</option>
+                <option value="gemini-2.5-flash">gemini-2.5-flash（Gemini 2.5 Flash）</option>
+                <option value="custom">カスタムモデル名を直接入力...</option>
+              </select>
+              <input type="text" id="gemini-custom-model-input" placeholder="例: gemini-4-hydrogen" class="hidden w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono focus:outline-none focus:border-brand-500">
+            </div>
+            <div id="ai-test-result-box" class="hidden rounded-lg p-2.5 text-xs"></div>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <button type="button" onclick="clearGeminiApiKey()" class="px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                キーを削除
+              </button>
+              <div class="flex items-center gap-2">
+                <button type="button" id="test-gemini-btn" onclick="testGeminiConnection()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition">
+                  <i class="fa-solid fa-plug-circle-check mr-1 text-emerald-600"></i>接続テスト
+                </button>
+                <button type="button" onclick="saveGeminiApiKey()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow-xs transition">
+                  AI設定を保存する
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div class="px-5 py-3 border-t border-slate-200 bg-white flex justify-end">
-        <button type="button" onclick="closeMasterModal()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold rounded-lg transition">
-          完了して閉じる
-        </button>
       </div>
     </div>
   </div>
@@ -601,6 +618,14 @@
     // 1. 定数・初期サンプルデータ・セキュリティ用ヘルパー
     // =========================================================================
     const STORAGE_KEY = 'smart_kakeibo_pro_v1';
+    const GEMINI_KEY_STORAGE = 'smart_kakeibo_gemini_api_key_v1';
+    const GEMINI_MODEL_STORAGE = 'smart_kakeibo_gemini_model_v1';
+    const DEFAULT_GEMINI_MODEL = 'auto';
+    const FALLBACK_MODELS = [
+      'gemini-4-hydrogen',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash'
+    ];
     const MAX_STRING_LEN = 120;
     const MAX_MEMO_LEN = 500;
     const MAX_ITEMS_PER_RECEIPT = 200;
@@ -791,27 +816,20 @@
         }
       ];
 
-      return {
-        categories,
-        stores,
-        payments,
-        receipts
-      };
+      return { categories, stores, payments, receipts };
     }
 
     // =========================================================================
     // 2. アプリケーション状態・データ永続化・サニタイズ
     // =========================================================================
     let appState = createDefaultData();
-    let currentMonth = ''; // "YYYY-MM"
-    let expandedNodes = new Set(); // "maj:id", "med:id"
+    let currentMonth = '';
+    let expandedNodes = new Set();
     let categoryChartInstance = null;
 
-    // マスタモーダル選択状態
     let masterSelectedMajorId = null;
     let masterSelectedMediumId = null;
 
-    // カメラ・OCR状態
     let cameraStream = null;
     let cameraFacingMode = 'environment';
     let availableVideoDevices = [];
@@ -820,7 +838,6 @@
     function sanitizeImportedState(raw) {
       if (!raw || typeof raw !== 'object') return null;
 
-      // カテゴリー階層の検証・正規化
       let categories = [];
       if (Array.isArray(raw.categories)) {
         const seenMaj = new Set();
@@ -937,7 +954,6 @@
           saveState(false);
         }
       } catch (e) {
-        console.warn('状態読み込みエラーのため初期データをセットします:', e);
         appState = createDefaultData();
         saveState(false);
       }
@@ -948,7 +964,6 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
         if (notify) showToast('保存しました', 'success');
       } catch (e) {
-        console.error('保存エラー:', e);
         showToast('ブラウザの保存領域への書き込みに失敗しました', 'error');
       }
     }
@@ -982,7 +997,7 @@
         el.style.opacity = '0';
         el.style.transform = 'translateY(-8px)';
         setTimeout(() => el.remove(), 250);
-      }, 2600);
+      }, 3200);
     }
 
     function showConfirm(title, message, okLabel = '実行する') {
@@ -1061,7 +1076,7 @@
     }
 
     // =========================================================================
-    // 4. 月次切り替え・3階層集計（大・中・小）・グラフ・支払方法別集計
+    // 4. 月次切り替え・3階層集計・グラフ・支払方法別集計
     // =========================================================================
     function setTodayMonth() {
       const now = new Date();
@@ -1118,31 +1133,13 @@
       let totalAmount = 0;
       let totalItems = 0;
 
-      // 3階層集計マップ構築
       const majorMap = new Map();
       for (const maj of appState.categories) {
-        majorMap.set(maj.id, {
-          id: maj.id,
-          name: maj.name,
-          amount: 0,
-          count: 0,
-          mediums: new Map()
-        });
+        majorMap.set(maj.id, { id: maj.id, name: maj.name, amount: 0, count: 0, mediums: new Map() });
         for (const med of maj.mediums) {
-          majorMap.get(maj.id).mediums.set(med.id, {
-            id: med.id,
-            name: med.name,
-            amount: 0,
-            count: 0,
-            minors: new Map()
-          });
+          majorMap.get(maj.id).mediums.set(med.id, { id: med.id, name: med.name, amount: 0, count: 0, minors: new Map() });
           for (const min of med.minors) {
-            majorMap.get(maj.id).mediums.get(med.id).minors.set(min.id, {
-              id: min.id,
-              name: min.name,
-              amount: 0,
-              count: 0
-            });
+            majorMap.get(maj.id).mediums.get(med.id).minors.set(min.id, { id: min.id, name: min.name, amount: 0, count: 0 });
           }
         }
       }
@@ -1169,13 +1166,7 @@
           const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
 
           if (!majorMap.has(majId)) {
-            majorMap.set(majId, {
-              id: majId,
-              name: names.majorName,
-              amount: 0,
-              count: 0,
-              mediums: new Map()
-            });
+            majorMap.set(majId, { id: majId, name: names.majorName, amount: 0, count: 0, mediums: new Map() });
           }
           const majNode = majorMap.get(majId);
           majNode.amount += price;
@@ -1183,13 +1174,7 @@
 
           const medId = itm.mediumId || 'unclassified_med';
           if (!majNode.mediums.has(medId)) {
-            majNode.mediums.set(medId, {
-              id: medId,
-              name: names.mediumName,
-              amount: 0,
-              count: 0,
-              minors: new Map()
-            });
+            majNode.mediums.set(medId, { id: medId, name: names.mediumName, amount: 0, count: 0, minors: new Map() });
           }
           const medNode = majNode.mediums.get(medId);
           medNode.amount += price;
@@ -1197,12 +1182,7 @@
 
           const minId = itm.minorId || 'unclassified_min';
           if (!medNode.minors.has(minId)) {
-            medNode.minors.set(minId, {
-              id: minId,
-              name: names.minorName,
-              amount: 0,
-              count: 0
-            });
+            medNode.minors.set(minId, { id: minId, name: names.minorName, amount: 0, count: 0 });
           }
           const minNode = medNode.minors.get(minId);
           minNode.amount += price;
@@ -1214,18 +1194,12 @@
         payNode.count += 1;
       }
 
-      // KPI更新
       document.getElementById('kpi-total-amount').textContent = `¥${totalAmount.toLocaleString()}`;
       document.getElementById('kpi-receipt-count').textContent = String(receipts.length);
       document.getElementById('kpi-item-count').textContent = String(totalItems);
 
-      // 階層アコーディオン描画
       renderCategoryHierarchy(majorMap, totalAmount);
-
-      // グラフ描画
       renderCategoryChart(majorMap);
-
-      // 支払方法別集計描画
       renderPaymentSummary(paymentMap, totalAmount);
     }
 
@@ -1307,11 +1281,8 @@
 
     function toggleCategoryNode(key) {
       if (!key) return;
-      if (expandedNodes.has(key)) {
-        expandedNodes.delete(key);
-      } else {
-        expandedNodes.add(key);
-      }
+      if (expandedNodes.has(key)) expandedNodes.delete(key);
+      else expandedNodes.add(key);
       renderDashboard();
     }
 
@@ -1353,14 +1324,12 @@
         type: 'doughnut',
         data: {
           labels: entries.map((e) => e.name),
-          datasets: [
-            {
-              data: entries.map((e) => e.amount),
-              backgroundColor: entries.map((_, idx) => palette[idx % palette.length]),
-              borderWidth: 2,
-              borderColor: '#ffffff'
-            }
-          ]
+          datasets: [{
+            data: entries.map((e) => e.amount),
+            backgroundColor: entries.map((_, idx) => palette[idx % palette.length]),
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
         },
         options: {
           responsive: true,
@@ -1369,15 +1338,10 @@
           plugins: {
             legend: {
               position: 'right',
-              labels: {
-                boxWidth: 10,
-                font: { size: 11, family: '"Noto Sans JP", sans-serif' }
-              }
+              labels: { boxWidth: 10, font: { size: 11, family: '"Noto Sans JP", sans-serif' } }
             },
             tooltip: {
-              callbacks: {
-                label: (ctx) => ` ¥${Number(ctx.raw || 0).toLocaleString()}`
-              }
+              callbacks: { label: (ctx) => ` ¥${Number(ctx.raw || 0).toLocaleString()}` }
             }
           }
         }
@@ -1386,9 +1350,7 @@
 
     function renderPaymentSummary(paymentMap, totalAmount) {
       const container = document.getElementById('payment-summary-container');
-      const entries = Array.from(paymentMap.values())
-        .filter((p) => p.amount > 0)
-        .sort((a, b) => b.amount - a.amount);
+      const entries = Array.from(paymentMap.values()).filter((p) => p.amount > 0).sort((a, b) => b.amount - a.amount);
 
       if (entries.length === 0) {
         container.innerHTML = `<div class="text-xs text-slate-400">支払データがありません</div>`;
@@ -1414,7 +1376,7 @@
     }
 
     // =========================================================================
-    // 5. 購入履歴一覧（検索・絞り込み・編集・削除）
+    // 5. 購入履歴一覧
     // =========================================================================
     function renderHistory() {
       const listEl = document.getElementById('receipt-history-list');
@@ -1450,10 +1412,7 @@
       badgeEl.textContent = `${filtered.length}件`;
 
       if (filtered.length === 0) {
-        listEl.innerHTML = `
-          <div class="p-8 text-center text-xs text-slate-400">
-            条件に一致する購入履歴はありません。
-          </div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">条件に一致する購入履歴はありません。</div>`;
         return;
       }
 
@@ -1494,10 +1453,10 @@
                 <div class="flex items-center gap-3">
                   <span class="text-base font-bold text-slate-900">¥${sum.toLocaleString()}</span>
                   <div class="flex items-center gap-1">
-                    <button type="button" data-action="edit-receipt" data-id="${escapeAttr(rec.id)}" class="px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition" title="編集">
+                    <button type="button" data-action="edit-receipt" data-id="${escapeAttr(rec.id)}" class="px-2.5 py-1 text-xs font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition">
                       <i class="fa-solid fa-pen mr-1"></i>編集
                     </button>
-                    <button type="button" data-action="delete-receipt" data-id="${escapeAttr(rec.id)}" class="px-2 py-1 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition" title="削除">
+                    <button type="button" data-action="delete-receipt" data-id="${escapeAttr(rec.id)}" class="px-2 py-1 text-xs font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition">
                       <i class="fa-solid fa-trash"></i>
                     </button>
                   </div>
@@ -1514,67 +1473,51 @@
     }
 
     // =========================================================================
-    // 6. 右パネル：1回の購入登録フォーム（商品明細行・3階層連動選択・保存）
+    // 6. 右パネル：1回の購入登録フォーム
     // =========================================================================
     function populateMasterSelects() {
-      // 店舗datalist
       const storeDatalist = document.getElementById('store-datalist');
       if (storeDatalist) {
         storeDatalist.innerHTML = appState.stores.map((s) => `<option value="${escapeAttr(s)}"></option>`).join('');
       }
 
-      // 支払方法セレクト（フォーム用＆履歴フィルター用）
       const paySelect = document.getElementById('form-payment');
       const currentPayVal = paySelect ? paySelect.value : '';
       if (paySelect) {
-        paySelect.innerHTML = appState.payments
-          .map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`)
-          .join('');
-        if (currentPayVal && appState.payments.includes(currentPayVal)) {
-          paySelect.value = currentPayVal;
-        }
+        paySelect.innerHTML = appState.payments.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
+        if (currentPayVal && appState.payments.includes(currentPayVal)) paySelect.value = currentPayVal;
       }
 
       const filterPay = document.getElementById('filter-payment');
       const currentFilterPay = filterPay ? filterPay.value : '';
       if (filterPay) {
-        filterPay.innerHTML =
-          `<option value="">すべての支払方法</option>` +
-          appState.payments.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
+        filterPay.innerHTML = `<option value="">すべての支払方法</option>` + appState.payments.map((p) => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join('');
         if (currentFilterPay) filterPay.value = currentFilterPay;
       }
 
       const filterMajor = document.getElementById('filter-major-cat');
       const currentFilterMajor = filterMajor ? filterMajor.value : '';
       if (filterMajor) {
-        filterMajor.innerHTML =
-          `<option value="">すべての大分類</option>` +
-          appState.categories.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+        filterMajor.innerHTML = `<option value="">すべての大分類</option>` + appState.categories.map((c) => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('');
         if (currentFilterMajor) filterMajor.value = currentFilterMajor;
       }
     }
 
     function buildMajorOptionsHtml(selectedMajorId) {
-      return appState.categories
-        .map((c) => `<option value="${escapeAttr(c.id)}" ${c.id === selectedMajorId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`)
-        .join('');
+      return appState.categories.map((c) => `<option value="${escapeAttr(c.id)}" ${c.id === selectedMajorId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
     }
 
     function buildMediumOptionsHtml(majorId, selectedMediumId) {
       const maj = appState.categories.find((c) => c.id === majorId) || appState.categories[0];
       if (!maj || !maj.mediums.length) return `<option value="">中分類なし</option>`;
-      return maj.mediums
-        .map((m) => `<option value="${escapeAttr(m.id)}" ${m.id === selectedMediumId ? 'selected' : ''}>${escapeHtml(m.name)}</option>`)
-        .join('');
+      return maj.mediums.map((m) => `<option value="${escapeAttr(m.id)}" ${m.id === selectedMediumId ? 'selected' : ''}>${escapeHtml(m.name)}</option>`).join('');
     }
 
     function buildMinorOptionsHtml(majorId, mediumId, selectedMinorId) {
       const maj = appState.categories.find((c) => c.id === majorId) || appState.categories[0];
       const med = maj ? maj.mediums.find((m) => m.id === mediumId) || maj.mediums[0] : null;
       if (!med || !med.minors.length) return `<option value="">小分類なし</option>`;
-      return med.minors
-        .map((s) => `<option value="${escapeAttr(s.id)}" ${s.id === selectedMinorId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`)
-        .join('');
+      return med.minors.map((s) => `<option value="${escapeAttr(s.id)}" ${s.id === selectedMinorId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('');
     }
 
     function addItemRow(initial = null) {
@@ -1587,13 +1530,9 @@
 
       const majId = initial?.majorId && appState.categories.some((c) => c.id === initial.majorId) ? initial.majorId : defaultMaj;
       const majObj = appState.categories.find((c) => c.id === majId);
-      const medId = initial?.mediumId && majObj?.mediums.some((m) => m.id === initial.mediumId)
-        ? initial.mediumId
-        : (majObj?.mediums[0]?.id || defaultMed);
+      const medId = initial?.mediumId && majObj?.mediums.some((m) => m.id === initial.mediumId) ? initial.mediumId : (majObj?.mediums[0]?.id || defaultMed);
       const medObj = majObj?.mediums.find((m) => m.id === medId);
-      const minId = initial?.minorId && medObj?.minors.some((s) => s.id === initial.minorId)
-        ? initial.minorId
-        : (medObj?.minors[0]?.id || defaultMin);
+      const minId = initial?.minorId && medObj?.minors.some((s) => s.id === initial.minorId) ? initial.minorId : (medObj?.minors[0]?.id || defaultMin);
 
       const rowId = uid('row');
       const card = document.createElement('div');
@@ -1607,7 +1546,7 @@
             <span class="text-xs text-slate-400 absolute left-2 top-1/2 -translate-y-1/2">¥</span>
             <input type="number" data-field="price" value="${initial?.price !== undefined ? Number(initial.price) : ''}" min="0" step="1" placeholder="金額" required oninput="updateFormTotal()" class="w-full pl-5 pr-2 py-1.5 text-xs font-bold text-right border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
           </div>
-          <button type="button" data-action="remove-row" data-row-id="${escapeAttr(rowId)}" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0" title="この行を削除">
+          <button type="button" data-action="remove-row" data-row-id="${escapeAttr(rowId)}" class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0">
             <i class="fa-solid fa-xmark text-xs"></i>
           </button>
         </div>
@@ -1670,8 +1609,7 @@
       const cards = Array.from(container.children);
       let sum = 0;
       for (const card of cards) {
-        const priceInput = card.querySelector('input[data-field="price"]');
-        const p = Number(priceInput?.value || 0);
+        const p = Number(card.querySelector('input[data-field="price"]')?.value || 0);
         if (Number.isFinite(p) && p > 0) sum += Math.round(p);
       }
       document.getElementById('form-item-count').textContent = String(cards.length);
@@ -1691,9 +1629,7 @@
 
       document.getElementById('form-date').value = defaultDate;
       document.getElementById('form-store').value = appState.stores[0] || '';
-      if (appState.payments.length > 0) {
-        document.getElementById('form-payment').value = appState.payments[0];
-      }
+      if (appState.payments.length > 0) document.getElementById('form-payment').value = appState.payments[0];
       document.getElementById('form-memo').value = '';
 
       const container = document.getElementById('item-rows-container');
@@ -1712,25 +1648,20 @@
 
       document.getElementById('form-date').value = rec.date;
       document.getElementById('form-store').value = rec.store;
-      if (appState.payments.includes(rec.payment)) {
-        document.getElementById('form-payment').value = rec.payment;
-      }
+      if (appState.payments.includes(rec.payment)) document.getElementById('form-payment').value = rec.payment;
       document.getElementById('form-memo').value = rec.memo || '';
 
       const container = document.getElementById('item-rows-container');
       container.innerHTML = '';
-      for (const itm of rec.items || []) {
-        addItemRow(itm);
-      }
+      for (const itm of rec.items || []) addItemRow(itm);
       if (!rec.items || rec.items.length === 0) addItemRow();
       updateFormTotal();
       showToast('購入データを右パネルに読み込みました', 'info');
     }
 
     async function deleteReceipt(receiptId) {
-      const ok = await showConfirm('購入履歴の削除', 'このレシート（購入明細）を削除しますか？削除後は元に戻せません。', '削除する');
+      const ok = await showConfirm('購入履歴の削除', 'このレシート（購入明細）を削除しますか？', '削除する');
       if (!ok) return;
-
       appState.receipts = appState.receipts.filter((r) => r.id !== receiptId);
       saveState(false);
       renderAll();
@@ -1746,12 +1677,8 @@
       const memo = sanitizeText(document.getElementById('form-memo').value, MAX_MEMO_LEN, '');
       const editingId = document.getElementById('editing-receipt-id').value.trim();
 
-      if (!date) {
-        showToast('有効な購入日を入力してください', 'error');
-        return;
-      }
-      if (!store) {
-        showToast('購入先（店舗名）を入力してください', 'error');
+      if (!date || !store) {
+        showToast('購入日と購入先を入力してください', 'error');
         return;
       }
 
@@ -1768,54 +1695,21 @@
           showToast('すべての商品行に商品名と0以上の金額を入力してください', 'error');
           return;
         }
-        items.push({
-          id: uid('itm'),
-          name,
-          price,
-          majorId,
-          mediumId,
-          minorId
-        });
+        items.push({ id: uid('itm'), name, price, majorId, mediumId, minorId });
       }
 
-      if (items.length === 0) {
-        showToast('商品明細を1件以上入力してください', 'error');
-        return;
-      }
-
-      // 新規店舗ならマスタに自動追加
-      if (!appState.stores.includes(store)) {
-        appState.stores.unshift(store);
-      }
+      if (!appState.stores.includes(store)) appState.stores.unshift(store);
 
       if (editingId) {
         const idx = appState.receipts.findIndex((r) => r.id === editingId);
-        if (idx !== -1) {
-          appState.receipts[idx] = {
-            ...appState.receipts[idx],
-            date,
-            store,
-            payment,
-            memo,
-            items
-          };
-          showToast('購入データを更新しました', 'success');
-        }
+        if (idx !== -1) appState.receipts[idx] = { ...appState.receipts[idx], date, store, payment, memo, items };
+        showToast('購入データを更新しました', 'success');
       } else {
-        appState.receipts.unshift({
-          id: uid('rec'),
-          date,
-          store,
-          payment,
-          memo,
-          items
-        });
+        appState.receipts.unshift({ id: uid('rec'), date, store, payment, memo, items });
         showToast('家計簿に購入を登録しました', 'success');
       }
 
       saveState(false);
-
-      // 登録した月にビューを合わせる
       const recYm = date.slice(0, 7);
       if (recYm !== currentMonth) {
         currentMonth = recYm;
@@ -1828,20 +1722,47 @@
     }
 
     // =========================================================================
-    // 7. レシート読込み（Webカメラ撮影・画像OCR・テキスト解析）
+    // 7. レシート読込み（画像変換・Webカメラ・Gemini AI・標準OCR・テキスト解析）
     // =========================================================================
+    function buildEnhancedCanvasFromImage(imgEl, enhanceContrast = false) {
+      const maxDim = 1600;
+      const origW = imgEl.naturalWidth || imgEl.width || 800;
+      const origH = imgEl.naturalHeight || imgEl.height || 1000;
+      const scale = Math.min(1, maxDim / Math.max(origW, origH));
+      const w = Math.max(1, Math.round(origW * scale));
+      const h = Math.max(1, Math.round(origH * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(imgEl, 0, 0, w, h);
+
+      if (enhanceContrast) {
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const d = imgData.data;
+        const factor = 1.45;
+        for (let i = 0; i < d.length; i += 4) {
+          const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          const contrasted = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+          d[i] = d[i + 1] = d[i + 2] = contrasted;
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+
+      return canvas;
+    }
+
     function toggleReceiptReader() {
       const body = document.getElementById('receipt-reader-body');
       const chev = document.getElementById('receipt-reader-chevron');
       if (!body) return;
       const willOpen = body.classList.contains('hidden');
       body.classList.toggle('hidden', !willOpen);
-      if (chev) {
-        chev.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
-      }
-      if (!willOpen) {
-        stopReceiptCamera();
-      }
+      if (chev) chev.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+      if (!willOpen) stopReceiptCamera();
     }
 
     function setupDragAndDrop() {
@@ -1866,9 +1787,7 @@
 
       dropZone.addEventListener('drop', (e) => {
         const files = e.dataTransfer?.files;
-        if (files && files.length > 0) {
-          loadImageFileToPreview(files[0]);
-        }
+        if (files && files.length > 0) loadImageFileToPreview(files[0]);
       });
     }
 
@@ -1885,9 +1804,7 @@
         return;
       }
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImageDataUrl(e.target.result);
-      };
+      reader.onload = (e) => setPreviewImageDataUrl(e.target.result);
       reader.readAsDataURL(file);
     }
 
@@ -1895,11 +1812,13 @@
       const img = document.getElementById('receipt-preview-img');
       const placeholder = document.getElementById('drop-zone-placeholder');
       const wrapper = document.getElementById('receipt-preview-wrapper');
+      const errBox = document.getElementById('ai-error-detail-box');
       if (!img || !placeholder || !wrapper) return;
 
       img.src = dataUrl;
       placeholder.classList.add('hidden');
       wrapper.classList.remove('hidden');
+      if (errBox) errBox.classList.add('hidden');
     }
 
     function clearReceiptImage() {
@@ -1907,10 +1826,12 @@
       const placeholder = document.getElementById('drop-zone-placeholder');
       const wrapper = document.getElementById('receipt-preview-wrapper');
       const progBox = document.getElementById('ocr-progress-box');
+      const errBox = document.getElementById('ai-error-detail-box');
       if (img) img.src = '';
       if (wrapper) wrapper.classList.add('hidden');
       if (placeholder) placeholder.classList.remove('hidden');
       if (progBox) progBox.classList.add('hidden');
+      if (errBox) errBox.classList.add('hidden');
     }
 
     async function startReceiptCamera(specificDeviceId = null) {
@@ -1918,7 +1839,6 @@
         showToast('お使いのブラウザはカメラ撮影に対応していません', 'error');
         return;
       }
-
       stopReceiptCamera();
 
       try {
@@ -1926,11 +1846,7 @@
           ? { deviceId: { exact: specificDeviceId } }
           : { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 960 } };
 
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-          audio: false
-        });
-
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
         const videoEl = document.getElementById('camera-video');
         const boxEl = document.getElementById('camera-capture-box');
         if (videoEl && boxEl) {
@@ -1938,19 +1854,11 @@
           boxEl.classList.remove('hidden');
         }
 
-        // 複数カメラの確認
         const devices = await navigator.mediaDevices.enumerateDevices();
         availableVideoDevices = devices.filter((d) => d.kind === 'videoinput');
         const switchBtn = document.getElementById('switch-camera-btn');
-        if (switchBtn) {
-          if (availableVideoDevices.length > 1) {
-            switchBtn.classList.remove('hidden');
-          } else {
-            switchBtn.classList.add('hidden');
-          }
-        }
+        if (switchBtn) switchBtn.classList.toggle('hidden', availableVideoDevices.length <= 1);
       } catch (err) {
-        console.error('カメラ起動エラー:', err);
         showToast('カメラを起動できませんでした。権限や接続を確認してください。', 'error');
       }
     }
@@ -1991,48 +1899,21 @@
 
       canvas.width = videoEl.videoWidth;
       canvas.height = videoEl.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      canvas.getContext('2d').drawImage(videoEl, 0, 0, canvas.width, canvas.height);
 
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       stopReceiptCamera();
       setPreviewImageDataUrl(dataUrl);
-      showToast('撮影しました。OCR解析を開始します...', 'info');
-      await runReceiptOCR();
+      if (getGeminiApiKey()) {
+        showToast('撮影しました。Gemini AIでレシート解析を開始します...', 'info');
+        await runGeminiReceiptAnalysis();
+      } else {
+        showToast('撮影しました。標準OCR解析を開始します...', 'info');
+        await runReceiptOCR();
+      }
     }
 
-    function buildEnhancedCanvasFromImage(imgEl, enhanceContrast) {
-      const canvas = document.createElement('canvas');
-      const maxDim = 1800;
-      let w = imgEl.naturalWidth || imgEl.width;
-      let h = imgEl.naturalHeight || imgEl.height;
-      if (w > maxDim || h > maxDim) {
-        const scale = Math.min(maxDim / w, maxDim / h);
-        w = Math.round(w * scale);
-        h = Math.round(h * scale);
-      }
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(imgEl, 0, 0, w, h);
-
-      if (enhanceContrast) {
-        const imgData = ctx.getImageData(0, 0, w, h);
-        const data = imgData.data;
-        const contrast = 1.45;
-        const intercept = 128 * (1 - contrast);
-        for (let i = 0; i < data.length; i += 4) {
-          const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-          let val = gray * contrast + intercept;
-          if (val < 0) val = 0;
-          if (val > 255) val = 255;
-          data[i] = data[i + 1] = data[i + 2] = val;
-        }
-        ctx.putImageData(imgData, 0, 0);
-      }
-      return canvas;
-    }
-
+    // 標準OCR (Tesseract.js)
     async function runReceiptOCR() {
       const imgEl = document.getElementById('receipt-preview-img');
       if (!imgEl || !imgEl.src) {
@@ -2040,54 +1921,386 @@
         return;
       }
       if (typeof Tesseract === 'undefined') {
-        showToast('OCRライブラリが読み込まれていません。テキスト貼り付け解析をご利用ください。', 'error');
+        showToast('OCRライブラリの読み込み中です。少し待って再度お試しください。', 'warning');
         return;
       }
 
-      const enhance = document.getElementById('ocr-enhance-contrast')?.checked ?? true;
+      const ocrBtn = document.getElementById('run-ocr-btn');
       const progBox = document.getElementById('ocr-progress-box');
       const statusEl = document.getElementById('ocr-status-text');
       const pctEl = document.getElementById('ocr-percent-text');
       const barEl = document.getElementById('ocr-progress-bar');
-      const runBtn = document.getElementById('run-ocr-btn');
 
       try {
-        if (runBtn) runBtn.disabled = true;
+        if (ocrBtn) ocrBtn.disabled = true;
         if (progBox) progBox.classList.remove('hidden');
-        if (statusEl) statusEl.textContent = '画像を準備中...';
-        if (pctEl) pctEl.textContent = '0%';
-        if (barEl) barEl.style.width = '0%';
+        if (statusEl) statusEl.textContent = '標準OCRエンジン準備中...';
+        if (pctEl) pctEl.textContent = '10%';
+        if (barEl) barEl.style.width = '10%';
 
-        const targetCanvas = buildEnhancedCanvasFromImage(imgEl, enhance);
+        const enhance = Boolean(document.getElementById('ocr-enhance-contrast')?.checked);
+        const canvas = buildEnhancedCanvasFromImage(imgEl, enhance);
 
-        const result = await Tesseract.recognize(targetCanvas, 'jpn+eng', {
+        const result = await Tesseract.recognize(canvas, 'jpn+eng', {
           logger: (m) => {
             if (m.status === 'recognizing text' && typeof m.progress === 'number') {
-              const p = Math.round(m.progress * 100);
-              if (statusEl) statusEl.textContent = 'レシート文字を認識中...';
-              if (pctEl) pctEl.textContent = `${p}%`;
-              if (barEl) barEl.style.width = `${p}%`;
-            } else if (m.status) {
-              if (statusEl) statusEl.textContent = `OCR処理中 (${m.status})...`;
+              const pct = Math.round(m.progress * 100);
+              if (statusEl) statusEl.textContent = '文字認識中...';
+              if (pctEl) pctEl.textContent = `${pct}%`;
+              if (barEl) barEl.style.width = `${pct}%`;
             }
           }
         });
 
-        const rawText = result?.data?.text || '';
-        const textArea = document.getElementById('receipt-raw-text');
-        if (textArea) textArea.value = rawText.trim();
+        const text = result?.data?.text || '';
+        const ta = document.getElementById('receipt-raw-text');
+        if (ta) ta.value = text;
 
-        if (rawText.trim()) {
-          parseReceiptTextToForm(rawText);
-          showToast('OCR読取が完了し、明細へ反映しました', 'success');
+        if (!text.trim()) {
+          showToast('文字を読み取れませんでした。明るく撮影してお試しください。', 'warning');
+          return;
+        }
+        parseReceiptTextToForm(text);
+      } catch (err) {
+        console.error('標準OCRエラー:', err);
+        showToast('標準OCR解析中にエラーが発生しました', 'error');
+      } finally {
+        if (ocrBtn) ocrBtn.disabled = false;
+      }
+    }
+
+    // =========================================================================
+    // 7-B. Gemini APIキー・モデル設定＆AIレシート画像解析
+    // =========================================================================
+    function getGeminiApiKey() {
+      try {
+        return (localStorage.getItem(GEMINI_KEY_STORAGE) || '').trim();
+      } catch {
+        return '';
+      }
+    }
+
+    function getGeminiModel() {
+      try {
+        return (localStorage.getItem(GEMINI_MODEL_STORAGE) || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL;
+      } catch {
+        return DEFAULT_GEMINI_MODEL;
+      }
+    }
+
+    function onGeminiModelSelectChange() {
+      const sel = document.getElementById('gemini-model-select');
+      const customInput = document.getElementById('gemini-custom-model-input');
+      if (!sel || !customInput) return;
+      customInput.classList.toggle('hidden', sel.value !== 'custom');
+    }
+
+    function updateGeminiKeyStatusUI() {
+      const key = getGeminiApiKey();
+      const model = getGeminiModel();
+      const badge = document.getElementById('gemini-key-status-badge');
+      const input = document.getElementById('gemini-api-key-input');
+      const sel = document.getElementById('gemini-model-select');
+      const customInput = document.getElementById('gemini-custom-model-input');
+
+      if (badge) {
+        const modelLabel = model === 'auto' ? '自動選択' : model;
+        badge.innerHTML = key
+          ? `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check mr-0.5"></i>AI設定済 (${escapeHtml(modelLabel)})</span>`
+          : `<span class="text-slate-400">Gemini APIキー: 未設定</span>`;
+      }
+      if (input && key) {
+        input.value = key;
+      }
+      if (sel) {
+        const hasOption = Array.from(sel.options).some((o) => o.value === model && o.value !== 'custom');
+        if (hasOption) {
+          sel.value = model;
+          if (customInput) customInput.classList.add('hidden');
         } else {
-          showToast('文字が検出できませんでした。テキスト欄に手入力して解析することもできます。', 'warning');
+          sel.value = 'custom';
+          if (customInput) {
+            customInput.value = model;
+            customInput.classList.remove('hidden');
+          }
+        }
+      }
+    }
+
+    function saveGeminiApiKey() {
+      const input = document.getElementById('gemini-api-key-input');
+      const sel = document.getElementById('gemini-model-select');
+      const customInput = document.getElementById('gemini-custom-model-input');
+      const val = (input?.value || '').trim();
+      const selectedModel = sel?.value === 'custom'
+        ? sanitizeText(customInput?.value || '', 80, DEFAULT_GEMINI_MODEL)
+        : (sel?.value || DEFAULT_GEMINI_MODEL);
+
+      if (!val) {
+        showToast('APIキーを入力してください', 'warning');
+        return;
+      }
+      try {
+        localStorage.setItem(GEMINI_KEY_STORAGE, val);
+        localStorage.setItem(GEMINI_MODEL_STORAGE, selectedModel);
+        updateGeminiKeyStatusUI();
+        const label = selectedModel === 'auto' ? '自動選択' : selectedModel;
+        showToast(`AI設定（${label}）を保存しました`, 'success');
+      } catch {
+        showToast('AI設定の保存に失敗しました', 'error');
+      }
+    }
+
+    function clearGeminiApiKey() {
+      try {
+        localStorage.removeItem(GEMINI_KEY_STORAGE);
+        const input = document.getElementById('gemini-api-key-input');
+        if (input) input.value = '';
+        updateGeminiKeyStatusUI();
+        showToast('Gemini APIキーを削除しました', 'info');
+      } catch {}
+    }
+
+    function toggleGeminiKeyVisibility() {
+      const input = document.getElementById('gemini-api-key-input');
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    async function callGeminiWithFallback(apiKey, payload, preferredModel) {
+      const candidates = preferredModel === 'auto'
+        ? [...FALLBACK_MODELS]
+        : [preferredModel, ...FALLBACK_MODELS.filter((m) => m !== preferredModel)];
+
+      let lastErrorMessage = '';
+      for (const modelName of candidates) {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            return { data, usedModel: modelName };
+          }
+
+          let errDetail = '';
+          try {
+            const errJson = await response.json();
+            errDetail = errJson?.error?.message || JSON.stringify(errJson);
+          } catch {
+            errDetail = await response.text();
+          }
+          lastErrorMessage = `[${modelName}] HTTP ${response.status}: ${errDetail}`;
+
+          if (errDetail.toLowerCase().includes('api key not valid')) {
+            throw new Error(lastErrorMessage);
+          }
+        } catch (netErr) {
+          lastErrorMessage = netErr.message || String(netErr);
+          if (lastErrorMessage.toLowerCase().includes('api key not valid')) {
+            throw netErr;
+          }
+        }
+      }
+      throw new Error(lastErrorMessage || 'すべてのモデルで接続に失敗しました');
+    }
+
+    async function testGeminiConnection() {
+      const input = document.getElementById('gemini-api-key-input');
+      const sel = document.getElementById('gemini-model-select');
+      const customInput = document.getElementById('gemini-custom-model-input');
+      const resBox = document.getElementById('ai-test-result-box');
+      const btn = document.getElementById('test-gemini-btn');
+
+      const apiKey = (input?.value || getGeminiApiKey()).trim();
+      const preferredModel = sel?.value === 'custom'
+        ? sanitizeText(customInput?.value || '', 80, DEFAULT_GEMINI_MODEL)
+        : (sel?.value || getGeminiModel());
+
+      if (!apiKey) {
+        showToast('先にGemini APIキーを入力してください', 'warning');
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      if (resBox) {
+        resBox.className = 'rounded-lg p-2.5 text-xs bg-slate-100 text-slate-700';
+        resBox.textContent = '接続テスト中...';
+        resBox.classList.remove('hidden');
+      }
+
+      try {
+        const testPayload = {
+          contents: [{ role: 'user', parts: [{ text: 'OKとだけ返答してください。' }] }]
+        };
+        const { usedModel } = await callGeminiWithFallback(apiKey, testPayload, preferredModel);
+        if (resBox) {
+          resBox.className = 'rounded-lg p-2.5 text-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium';
+          resBox.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i>接続成功！使用可能モデル: <strong>${escapeHtml(usedModel)}</strong>`;
         }
       } catch (err) {
-        console.error('OCRエラー:', err);
-        showToast('OCR解析中にエラーが発生しました', 'error');
+        if (resBox) {
+          resBox.className = 'rounded-lg p-2.5 text-xs bg-rose-50 border border-rose-200 text-rose-700 break-all';
+          resBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i>接続失敗: ${escapeHtml(err.message)}`;
+        }
       } finally {
-        if (runBtn) runBtn.disabled = false;
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function buildCategoryHierarchyPromptText() {
+      const lines = [];
+      for (const maj of appState.categories) {
+        for (const med of maj.mediums) {
+          for (const min of med.minors) {
+            lines.push(`- majorId="${maj.id}" (${maj.name}) > mediumId="${med.id}" (${med.name}) > minorId="${min.id}" (${min.name})`);
+          }
+        }
+      }
+      return lines.join('\n');
+    }
+
+    async function runGeminiReceiptAnalysis() {
+      const imgEl = document.getElementById('receipt-preview-img');
+      if (!imgEl || !imgEl.src) {
+        showToast('先にレシート画像を選択または撮影してください', 'warning');
+        return;
+      }
+
+      const apiKey = getGeminiApiKey();
+      if (!apiKey) {
+        showToast('Gemini APIキーが未設定のため、標準OCRを実行します', 'info');
+        await runReceiptOCR();
+        return;
+      }
+
+      const aiBtn = document.getElementById('run-ai-ocr-btn');
+      const progBox = document.getElementById('ocr-progress-box');
+      const statusEl = document.getElementById('ocr-status-text');
+      const pctEl = document.getElementById('ocr-percent-text');
+      const barEl = document.getElementById('ocr-progress-bar');
+      const errBox = document.getElementById('ai-error-detail-box');
+
+      if (errBox) errBox.classList.add('hidden');
+
+      try {
+        if (aiBtn) aiBtn.disabled = true;
+        if (progBox) progBox.classList.remove('hidden');
+        if (statusEl) statusEl.textContent = 'Gemini AIでレシート画像を解析中...';
+        if (pctEl) pctEl.textContent = '50%';
+        if (barEl) barEl.style.width = '50%';
+
+        const canvas = buildEnhancedCanvasFromImage(imgEl, false);
+        const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        const base64Data = jpegDataUrl.split(',')[1];
+
+        const categoryListText = buildCategoryHierarchyPromptText();
+        const promptText = `あなたは日本の家計簿アシスタントです。添付されたレシート画像を正確に読み取り、購入日・購入先店舗名・支払方法（読み取れる場合）・購入商品リストを抽出してください。
+また、各商品について以下のカテゴリー一覧から最も適切な majorId, mediumId, minorId を選択してください。割引・値引行がある場合は直前の商品金額から差し引くか、実支払額ベースで整理してください。小計・合計・消費税（外税の合計欄）・お釣りは商品リストに含めないでください。
+
+【利用可能なカテゴリー一覧】
+${categoryListText}`;
+
+        const payload = {
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: promptText },
+                {
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                date: { type: 'STRING', description: 'YYYY-MM-DD形式の購入日。不明な場合は空文字' },
+                store: { type: 'STRING', description: '店舗名・購入先' },
+                payment: { type: 'STRING', description: '支払方法（現金、クレジットカード、PayPayなど）。不明なら空文字' },
+                items: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      name: { type: 'STRING', description: 'わかりやすい商品名' },
+                      price: { type: 'INTEGER', description: '税込または支払金額（整数・円）' },
+                      majorId: { type: 'STRING' },
+                      mediumId: { type: 'STRING' },
+                      minorId: { type: 'STRING' }
+                    },
+                    required: ['name', 'price', 'majorId', 'mediumId', 'minorId']
+                  }
+                }
+              },
+              required: ['date', 'store', 'items']
+            }
+          }
+        };
+
+        const preferredModel = getGeminiModel();
+        const { data: result, usedModel } = await callGeminiWithFallback(apiKey, payload, preferredModel);
+
+        const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('AIから有効な応答テキストが返りませんでした');
+
+        const cleanedJson = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const parsed = JSON.parse(cleanedJson);
+
+        if (pctEl) pctEl.textContent = '100%';
+        if (barEl) barEl.style.width = '100%';
+        if (statusEl) statusEl.textContent = `AI解析完了 (${usedModel})`;
+
+        const validDate = sanitizeDate(parsed.date);
+        if (validDate) document.getElementById('form-date').value = validDate;
+
+        const cleanStore = sanitizeText(parsed.store, 80);
+        if (cleanStore) document.getElementById('form-store').value = cleanStore;
+
+        if (parsed.payment) {
+          const matchedPay = appState.payments.find((p) => parsed.payment.includes(p) || p.includes(parsed.payment));
+          if (matchedPay) document.getElementById('form-payment').value = matchedPay;
+        }
+
+        const items = Array.isArray(parsed.items) ? parsed.items : [];
+        if (items.length === 0) {
+          showToast('AIで商品明細を検出できませんでした', 'warning');
+          return;
+        }
+
+        const container = document.getElementById('item-rows-container');
+        container.innerHTML = '';
+        for (const itm of items) {
+          addItemRow({
+            name: sanitizeText(itm.name, 100, '商品'),
+            price: sanitizePositiveInt(itm.price, 0),
+            majorId: itm.majorId,
+            mediumId: itm.mediumId,
+            minorId: itm.minorId
+          });
+        }
+        updateFormTotal();
+        showToast(`Gemini AI (${usedModel}) が${items.length}点の商品を解析・自動分類しました`, 'success');
+      } catch (err) {
+        console.error('Gemini解析エラー:', err);
+        if (progBox) progBox.classList.add('hidden');
+        if (errBox) {
+          errBox.textContent = `詳細エラー: ${err.message}`;
+          errBox.classList.remove('hidden');
+        }
+        showToast('Gemini AI解析に失敗しました。下の詳細エラーを確認してください。', 'error');
+      } finally {
+        if (aiBtn) aiBtn.disabled = false;
       }
     }
 
@@ -2136,17 +2349,13 @@
 
     function parseReceiptTextToForm(overrideText = null) {
       const raw = overrideText !== null ? overrideText : (document.getElementById('receipt-raw-text')?.value || '');
-      const lines = raw
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean);
+      const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
       if (lines.length === 0) {
         showToast('解析するレシートテキストを入力してください', 'warning');
         return;
       }
 
-      // 日付抽出 (YYYY/MM/DD or YYYY-MM-DD)
       let foundDate = '';
       for (const line of lines) {
         const m = line.match(/(\d{4})[\/\-年](\d{1,2})[\/\-月](\d{1,2})/);
@@ -2155,18 +2364,12 @@
           break;
         }
       }
-      if (foundDate) {
-        document.getElementById('form-date').value = foundDate;
-      }
+      if (foundDate) document.getElementById('form-date').value = foundDate;
 
-      // 店舗名推定（既知店舗の一致 or 1行目から金額を除いた文字列）
       let foundStore = '';
       for (const line of lines.slice(0, 4)) {
         for (const s of appState.stores) {
-          if (line.includes(s)) {
-            foundStore = s;
-            break;
-          }
+          if (line.includes(s)) { foundStore = s; break; }
         }
         if (foundStore) break;
       }
@@ -2175,21 +2378,15 @@
           .replace(/\d{4}[\/\-年]\d{1,2}[\/\-月]\d{1,2}日?/g, '')
           .replace(/[¥￥]?\s*[\d,]+円?/g, '')
           .trim();
-        if (candidate && candidate.length <= 40) {
-          foundStore = candidate;
-        }
+        if (candidate && candidate.length <= 40) foundStore = candidate;
       }
-      if (foundStore) {
-        document.getElementById('form-store').value = foundStore;
-      }
+      if (foundStore) document.getElementById('form-store').value = foundStore;
 
-      // 商品行抽出（行末または行内の金額を抽出）
       const parsedItems = [];
       const skipWords = ['合計', '小計', '消費税', '外税', '内税', 'お預り', 'お釣り', '釣銭', 'ポイント', 'total'];
 
       for (const line of lines) {
         if (skipWords.some((w) => line.toLowerCase().includes(w))) continue;
-        // 日付のみの行はスキップ
         if (/^\d{4}[\/\-年]\d{1,2}[\/\-月]\d{1,2}日?$/.test(line)) continue;
 
         const priceMatch = line.match(/[¥￥]?\s*([\d,]{1,8})\s*円?\s*$/);
@@ -2206,13 +2403,7 @@
 
         if (!namePart) continue;
         const cats = guessCategoryByItemName(namePart);
-        parsedItems.push({
-          name: namePart,
-          price,
-          majorId: cats.majorId,
-          mediumId: cats.mediumId,
-          minorId: cats.minorId
-        });
+        parsedItems.push({ name: namePart, price, ...cats });
       }
 
       if (parsedItems.length === 0) {
@@ -2222,15 +2413,13 @@
 
       const container = document.getElementById('item-rows-container');
       container.innerHTML = '';
-      for (const itm of parsedItems) {
-        addItemRow(itm);
-      }
+      for (const itm of parsedItems) addItemRow(itm);
       updateFormTotal();
       showToast(`${parsedItems.length}件の商品を明細に反映しました`, 'success');
     }
 
     // =========================================================================
-    // 8. マスタ管理モーダル（大・中・小分類 / 購入先 / 支払方法）
+    // 8. マスタ管理モーダル
     // =========================================================================
     function openMasterModal(initialTab = 'categories') {
       const modal = document.getElementById('master-modal');
@@ -2260,7 +2449,7 @@
     }
 
     function switchMasterTab(tabName) {
-      ['categories', 'stores', 'payments'].forEach((t) => {
+      ['categories', 'stores', 'payments', 'ai'].forEach((t) => {
         const btn = document.getElementById(`tab-btn-${t}`);
         const pane = document.getElementById(`master-tab-${t}`);
         if (btn) btn.classList.toggle('tab-active', t === tabName);
@@ -2270,6 +2459,7 @@
       if (tabName === 'categories') renderMasterCategories();
       if (tabName === 'stores') renderMasterStores();
       if (tabName === 'payments') renderMasterPayments();
+      if (tabName === 'ai') updateGeminiKeyStatusUI();
     }
 
     function renderMasterCategories() {
@@ -2289,12 +2479,8 @@
             <div data-action="select-major" data-id="${escapeAttr(maj.id)}" class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition ${active ? 'bg-brand-50 border border-brand-300 text-brand-800 font-bold' : 'hover:bg-slate-50 text-slate-700 border border-transparent'}">
               <span class="text-xs truncate">${escapeHtml(maj.name)}</span>
               <div class="flex items-center gap-1 shrink-0">
-                <button type="button" data-action="rename-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
-                  <i class="fa-solid fa-pen text-[11px]"></i>
-                </button>
-                <button type="button" data-action="delete-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
-                  <i class="fa-solid fa-trash text-[11px]"></i>
-                </button>
+                <button type="button" data-action="rename-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-brand-600"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                <button type="button" data-action="delete-cat" data-level="major" data-id="${escapeAttr(maj.id)}" class="p-1 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash text-[11px]"></i></button>
               </div>
             </div>
           `;
@@ -2326,12 +2512,8 @@
                   <div data-action="select-medium" data-id="${escapeAttr(med.id)}" class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 cursor-pointer transition ${active ? 'bg-brand-50 border border-brand-300 text-brand-800 font-bold' : 'hover:bg-slate-50 text-slate-700 border border-transparent'}">
                     <span class="text-xs truncate">${escapeHtml(med.name)}</span>
                     <div class="flex items-center gap-1 shrink-0">
-                      <button type="button" data-action="rename-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
-                        <i class="fa-solid fa-pen text-[11px]"></i>
-                      </button>
-                      <button type="button" data-action="delete-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
-                        <i class="fa-solid fa-trash text-[11px]"></i>
-                      </button>
+                      <button type="button" data-action="rename-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-brand-600"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                      <button type="button" data-action="delete-cat" data-level="medium" data-id="${escapeAttr(med.id)}" class="p-1 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash text-[11px]"></i></button>
                     </div>
                   </div>
                 `;
@@ -2351,21 +2533,15 @@
         selectedMed.minors.length === 0
           ? `<div class="text-xs text-slate-400 p-2">小分類がありません</div>`
           : selectedMed.minors
-              .map((min) => {
-                return `
-                  <div class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 hover:bg-slate-50 text-slate-700 border border-transparent">
-                    <span class="text-xs truncate">${escapeHtml(min.name)}</span>
-                    <div class="flex items-center gap-1 shrink-0">
-                      <button type="button" data-action="rename-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-brand-600" title="名称変更">
-                        <i class="fa-solid fa-pen text-[11px]"></i>
-                      </button>
-                      <button type="button" data-action="delete-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-rose-600" title="削除">
-                        <i class="fa-solid fa-trash text-[11px]"></i>
-                      </button>
-                    </div>
+              .map((min) => `
+                <div class="px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 hover:bg-slate-50 text-slate-700 border border-transparent">
+                  <span class="text-xs truncate">${escapeHtml(min.name)}</span>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" data-action="rename-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-brand-600"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                    <button type="button" data-action="delete-cat" data-level="minor" data-id="${escapeAttr(min.id)}" class="p-1 text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash text-[11px]"></i></button>
                   </div>
-                `;
-              })
+                </div>
+              `)
               .join('');
     }
 
@@ -2384,21 +2560,8 @@
     function addMajorCategory() {
       const input = document.getElementById('new-major-name');
       const name = sanitizeText(input?.value, 60);
-      if (!name) {
-        showToast('大分類名を入力してください', 'warning');
-        return;
-      }
-      const newMaj = {
-        id: uid('maj'),
-        name,
-        mediums: [
-          {
-            id: uid('med'),
-            name: '一般',
-            minors: [{ id: uid('min'), name: 'その他' }]
-          }
-        ]
-      };
+      if (!name) return;
+      const newMaj = { id: uid('maj'), name, mediums: [{ id: uid('med'), name: '一般', minors: [{ id: uid('min'), name: 'その他' }] }] };
       appState.categories.push(newMaj);
       masterSelectedMajorId = newMaj.id;
       masterSelectedMediumId = newMaj.mediums[0].id;
@@ -2410,21 +2573,10 @@
 
     function addMediumCategory() {
       const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
-      if (!maj) {
-        showToast('先に大分類を選択してください', 'warning');
-        return;
-      }
       const input = document.getElementById('new-medium-name');
       const name = sanitizeText(input?.value, 60);
-      if (!name) {
-        showToast('中分類名を入力してください', 'warning');
-        return;
-      }
-      const newMed = {
-        id: uid('med'),
-        name,
-        minors: [{ id: uid('min'), name: 'その他' }]
-      };
+      if (!maj || !name) return;
+      const newMed = { id: uid('med'), name, minors: [{ id: uid('min'), name: 'その他' }] };
       maj.mediums.push(newMed);
       masterSelectedMediumId = newMed.id;
       input.value = '';
@@ -2436,16 +2588,9 @@
     function addMinorCategory() {
       const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
       const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
-      if (!med) {
-        showToast('先に中分類を選択してください', 'warning');
-        return;
-      }
       const input = document.getElementById('new-minor-name');
       const name = sanitizeText(input?.value, 60);
-      if (!name) {
-        showToast('小分類名を入力してください', 'warning');
-        return;
-      }
+      if (!med || !name) return;
       med.minors.push({ id: uid('min'), name });
       input.value = '';
       saveState(false);
@@ -2455,16 +2600,9 @@
 
     async function renameCategory(level, id) {
       let targetObj = null;
-      if (level === 'major') {
-        targetObj = appState.categories.find((c) => c.id === id);
-      } else if (level === 'medium') {
-        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
-        targetObj = maj?.mediums.find((m) => m.id === id);
-      } else if (level === 'minor') {
-        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
-        const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
-        targetObj = med?.minors.find((s) => s.id === id);
-      }
+      if (level === 'major') targetObj = appState.categories.find((c) => c.id === id);
+      else if (level === 'medium') targetObj = appState.categories.find((c) => c.id === masterSelectedMajorId)?.mediums.find((m) => m.id === id);
+      else if (level === 'minor') targetObj = appState.categories.find((c) => c.id === masterSelectedMajorId)?.mediums.find((m) => m.id === masterSelectedMediumId)?.minors.find((s) => s.id === id);
       if (!targetObj) return;
 
       const nextName = await showPromptModal('新しい分類名を入力', targetObj.name);
@@ -2477,12 +2615,8 @@
 
     async function deleteCategory(level, id) {
       if (level === 'major') {
-        if (appState.categories.length <= 1) {
-          showToast('最低1つの大分類が必要です', 'warning');
-          return;
-        }
-        const ok = await showConfirm('大分類の削除', 'この大分類（および配下の中・小分類）を削除しますか？', '削除する');
-        if (!ok) return;
+        if (appState.categories.length <= 1) return;
+        if (!(await showConfirm('大分類の削除', 'この大分類を削除しますか？', '削除する'))) return;
         appState.categories = appState.categories.filter((c) => c.id !== id);
         if (masterSelectedMajorId === id) {
           masterSelectedMajorId = appState.categories[0]?.id || null;
@@ -2490,57 +2624,38 @@
         }
       } else if (level === 'medium') {
         const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
-        if (!maj) return;
-        const ok = await showConfirm('中分類の削除', 'この中分類（および配下の小分類）を削除しますか？', '削除する');
-        if (!ok) return;
+        if (!maj || !(await showConfirm('中分類の削除', 'この中分類を削除しますか？', '削除する'))) return;
         maj.mediums = maj.mediums.filter((m) => m.id !== id);
-        if (masterSelectedMediumId === id) {
-          masterSelectedMediumId = maj.mediums[0]?.id || null;
-        }
+        if (masterSelectedMediumId === id) masterSelectedMediumId = maj.mediums[0]?.id || null;
       } else if (level === 'minor') {
-        const maj = appState.categories.find((c) => c.id === masterSelectedMajorId);
-        const med = maj?.mediums.find((m) => m.id === masterSelectedMediumId);
-        if (!med) return;
-        const ok = await showConfirm('小分類の削除', 'この小分類を削除しますか？', '削除する');
-        if (!ok) return;
+        const med = appState.categories.find((c) => c.id === masterSelectedMajorId)?.mediums.find((m) => m.id === masterSelectedMediumId);
+        if (!med || !(await showConfirm('小分類の削除', 'この小分類を削除しますか？', '削除する'))) return;
         med.minors = med.minors.filter((s) => s.id !== id);
       }
-
       saveState(false);
       renderMasterCategories();
       showToast('削除しました', 'success');
     }
 
-    // 購入先マスタ
     function renderMasterStores() {
       const listEl = document.getElementById('master-store-list');
       if (!listEl) return;
-      if (appState.stores.length === 0) {
-        listEl.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">登録された購入先はありません</div>`;
-        return;
-      }
-      listEl.innerHTML = appState.stores
-        .map(
-          (store, idx) => `
-          <div class="py-2.5 flex items-center justify-between gap-2">
-            <span class="text-sm font-medium text-slate-800">${escapeHtml(store)}</span>
-            <div class="flex items-center gap-1.5">
-              <button type="button" data-action="rename-store" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
-              <button type="button" data-action="delete-store" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
-            </div>
-          </div>
-        `
-        )
-        .join('');
+      listEl.innerHTML = appState.stores.length === 0
+        ? `<div class="py-6 text-center text-xs text-slate-400">登録された購入先はありません</div>`
+        : appState.stores.map((store, idx) => `
+            <div class="py-2.5 flex items-center justify-between gap-2">
+              <span class="text-sm font-medium text-slate-800">${escapeHtml(store)}</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" data-action="rename-store" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
+                <button type="button" data-action="delete-store" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
+              </div>
+            </div>`).join('');
     }
 
     function addStoreMaster() {
       const input = document.getElementById('new-store-name');
       const name = sanitizeText(input?.value, 80);
-      if (!name) {
-        showToast('購入先名を入力してください', 'warning');
-        return;
-      }
+      if (!name) return;
       if (!appState.stores.includes(name)) {
         appState.stores.unshift(name);
         saveState(false);
@@ -2560,51 +2675,37 @@
       saveState(false);
       renderMasterStores();
       populateMasterSelects();
-      showToast('購入先名を変更しました', 'success');
     }
 
     async function deleteStoreMaster(idx) {
       const target = appState.stores[idx];
       if (target === undefined) return;
-      const ok = await showConfirm('購入先の削除', `購入先「${target}」を一覧から削除しますか？`, '削除する');
-      if (!ok) return;
+      if (!(await showConfirm('購入先の削除', `購入先「${target}」を削除しますか？`, '削除する'))) return;
       appState.stores.splice(idx, 1);
       saveState(false);
       renderMasterStores();
       populateMasterSelects();
-      showToast('購入先を削除しました', 'success');
     }
 
-    // 支払方法マスタ
     function renderMasterPayments() {
       const listEl = document.getElementById('master-payment-list');
       if (!listEl) return;
-      if (appState.payments.length === 0) {
-        listEl.innerHTML = `<div class="py-6 text-center text-xs text-slate-400">登録された支払方法はありません</div>`;
-        return;
-      }
-      listEl.innerHTML = appState.payments
-        .map(
-          (pay, idx) => `
-          <div class="py-2.5 flex items-center justify-between gap-2">
-            <span class="text-sm font-medium text-slate-800">${escapeHtml(pay)}</span>
-            <div class="flex items-center gap-1.5">
-              <button type="button" data-action="rename-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
-              <button type="button" data-action="delete-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
-            </div>
-          </div>
-        `
-        )
-        .join('');
+      listEl.innerHTML = appState.payments.length === 0
+        ? `<div class="py-6 text-center text-xs text-slate-400">登録された支払方法はありません</div>`
+        : appState.payments.map((pay, idx) => `
+            <div class="py-2.5 flex items-center justify-between gap-2">
+              <span class="text-sm font-medium text-slate-800">${escapeHtml(pay)}</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" data-action="rename-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-brand-600 hover:bg-brand-50 rounded-lg transition">名称変更</button>
+                <button type="button" data-action="delete-payment" data-idx="${idx}" class="px-2 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg transition">削除</button>
+              </div>
+            </div>`).join('');
     }
 
     function addPaymentMaster() {
       const input = document.getElementById('new-payment-name');
       const name = sanitizeText(input?.value, 60);
-      if (!name) {
-        showToast('支払方法名を入力してください', 'warning');
-        return;
-      }
+      if (!name) return;
       if (!appState.payments.includes(name)) {
         appState.payments.push(name);
         saveState(false);
@@ -2624,23 +2725,17 @@
       saveState(false);
       renderMasterPayments();
       populateMasterSelects();
-      showToast('支払方法名を変更しました', 'success');
     }
 
     async function deletePaymentMaster(idx) {
-      if (appState.payments.length <= 1) {
-        showToast('最低1つの支払方法が必要です', 'warning');
-        return;
-      }
+      if (appState.payments.length <= 1) return;
       const target = appState.payments[idx];
       if (target === undefined) return;
-      const ok = await showConfirm('支払方法の削除', `支払方法「${target}」を削除しますか？`, '削除する');
-      if (!ok) return;
+      if (!(await showConfirm('支払方法の削除', `支払方法「${target}」を削除しますか？`, '削除する'))) return;
       appState.payments.splice(idx, 1);
       saveState(false);
       renderMasterPayments();
       populateMasterSelects();
-      showToast('支払方法を削除しました', 'success');
     }
 
     async function quickAddMaster(type) {
@@ -2652,7 +2747,6 @@
         saveState(false);
         populateMasterSelects();
         document.getElementById('form-store').value = clean;
-        showToast(`購入先「${clean}」を追加しました`, 'success');
       } else if (type === 'payments') {
         const name = await showPromptModal('新しい支払方法を追加');
         if (!name) return;
@@ -2661,45 +2755,22 @@
         saveState(false);
         populateMasterSelects();
         document.getElementById('form-payment').value = clean;
-        showToast(`支払方法「${clean}」を追加しました`, 'success');
       }
     }
 
     // =========================================================================
-    // 9. データ管理（CSV出力・JSONバックアップ/復元・サンプル再投入・全消去）
+    // 9. データ管理（CSV・JSON・初期化）
     // =========================================================================
     function exportCSV() {
       const rows = [['購入日', '購入先', '支払方法', '大分類', '中分類', '小分類', '商品名', '金額', 'レシートメモ']];
       for (const rec of appState.receipts) {
         for (const itm of rec.items || []) {
           const names = findCategoryNames(itm.majorId, itm.mediumId, itm.minorId);
-          rows.push([
-            rec.date,
-            rec.store,
-            rec.payment,
-            names.majorName,
-            names.mediumName,
-            names.minorName,
-            itm.name,
-            Number(itm.price) || 0,
-            rec.memo || ''
-          ]);
+          rows.push([rec.date, rec.store, rec.payment, names.majorName, names.mediumName, names.minorName, itm.name, Number(itm.price) || 0, rec.memo || '']);
         }
       }
-
-      const csvContent = rows
-        .map((r) =>
-          r
-            .map((cell) => {
-              const s = String(cell ?? '').replace(/"/g, '""');
-              return `"${s}"`;
-            })
-            .join(',')
-        )
-        .join('\r\n');
-
-      const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
-      const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+      const csvContent = rows.map((r) => r.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+      const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -2710,8 +2781,7 @@
     }
 
     function exportJSON() {
-      const payload = JSON.stringify(appState, null, 2);
-      const blob = new Blob([payload], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -2727,21 +2797,18 @@
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const raw = JSON.parse(e.target.result);
-          const clean = sanitizeImportedState(raw);
+          const clean = sanitizeImportedState(JSON.parse(e.target.result));
           if (!clean) {
             showToast('有効な家計簿JSONデータではありませんでした', 'error');
             return;
           }
-          const ok = await showConfirm('バックアップの復元', '現在のデータを上書きしてJSONバックアップから復元しますか？', '復元する');
-          if (!ok) return;
+          if (!(await showConfirm('バックアップの復元', '現在のデータを上書きして復元しますか？', '復元する'))) return;
           appState = clean;
           saveState(false);
           resetReceiptForm();
           renderAll();
           showToast('バックアップから復元しました', 'success');
-        } catch (err) {
-          console.error('JSON復元エラー:', err);
+        } catch {
           showToast('JSONファイルの読み込みに失敗しました', 'error');
         } finally {
           event.target.value = '';
@@ -2751,8 +2818,7 @@
     }
 
     async function resetToSampleData() {
-      const ok = await showConfirm('サンプルデータの再投入', '現在のデータを破棄して初期サンプルデータに戻しますか？', '再投入する');
-      if (!ok) return;
+      if (!(await showConfirm('サンプルデータの再投入', '現在のデータを破棄して初期サンプルデータに戻しますか？', '再投入する'))) return;
       appState = createDefaultData();
       saveState(false);
       setTodayMonth();
@@ -2761,15 +2827,9 @@
     }
 
     async function clearAllData() {
-      const ok = await showConfirm('全データの初期化', 'すべての購入履歴・購入先・支払方法を初期状態（空の履歴）にリセットしますか？', '初期化する');
-      if (!ok) return;
+      if (!(await showConfirm('全データの初期化', 'すべての購入履歴を初期状態にリセットしますか？', '初期化する'))) return;
       const base = createDefaultData();
-      appState = {
-        categories: base.categories,
-        stores: base.stores,
-        payments: base.payments,
-        receipts: []
-      };
+      appState = { categories: base.categories, stores: base.stores, payments: base.payments, receipts: [] };
       saveState(false);
       resetReceiptForm();
       renderAll();
@@ -2777,65 +2837,44 @@
     }
 
     // =========================================================================
-    // 10. イベント委譲（XSS対策）・メニュー制御＆アプリ起動エントリーポイント
+    // 10. イベント委譲＆起動処理
     // =========================================================================
     function toggleDataMenu(event) {
       if (event) event.stopPropagation();
-      const dropdown = document.getElementById('data-menu-dropdown');
-      if (!dropdown) return;
-      dropdown.classList.toggle('hidden');
+      document.getElementById('data-menu-dropdown')?.classList.toggle('hidden');
     }
 
     function closeDataMenu() {
-      const dropdown = document.getElementById('data-menu-dropdown');
-      if (!dropdown) return;
-      dropdown.classList.add('hidden');
+      document.getElementById('data-menu-dropdown')?.classList.add('hidden');
     }
 
     function setupDelegatedEvents() {
       document.addEventListener('click', (e) => {
-        // データ管理メニュー外をクリックした場合は閉じる
         const menuContainer = document.getElementById('data-menu-container');
-        if (menuContainer && !menuContainer.contains(e.target)) {
-          closeDataMenu();
-        }
+        if (menuContainer && !menuContainer.contains(e.target)) closeDataMenu();
 
         const target = e.target.closest('[data-action]');
         if (!target) return;
 
         const action = target.dataset.action;
-        if (action === 'toggle-node') {
-          toggleCategoryNode(target.dataset.key);
-        } else if (action === 'edit-receipt') {
-          editReceipt(target.dataset.id);
-        } else if (action === 'delete-receipt') {
-          deleteReceipt(target.dataset.id);
-        } else if (action === 'remove-row') {
-          removeItemRow(target.dataset.rowId);
-        } else if (action === 'select-major') {
-          selectMasterMajor(target.dataset.id);
-        } else if (action === 'select-medium') {
-          selectMasterMedium(target.dataset.id);
-        } else if (action === 'rename-cat') {
-          e.stopPropagation();
-          renameCategory(target.dataset.level, target.dataset.id);
-        } else if (action === 'delete-cat') {
-          e.stopPropagation();
-          deleteCategory(target.dataset.level, target.dataset.id);
-        } else if (action === 'rename-store') {
-          renameStoreMaster(Number(target.dataset.idx));
-        } else if (action === 'delete-store') {
-          deleteStoreMaster(Number(target.dataset.idx));
-        } else if (action === 'rename-payment') {
-          renamePaymentMaster(Number(target.dataset.idx));
-        } else if (action === 'delete-payment') {
-          deletePaymentMaster(Number(target.dataset.idx));
-        }
+        if (action === 'toggle-node') toggleCategoryNode(target.dataset.key);
+        else if (action === 'edit-receipt') editReceipt(target.dataset.id);
+        else if (action === 'delete-receipt') deleteReceipt(target.dataset.id);
+        else if (action === 'remove-row') removeItemRow(target.dataset.rowId);
+        else if (action === 'select-major') selectMasterMajor(target.dataset.id);
+        else if (action === 'select-medium') selectMasterMedium(target.dataset.id);
+        else if (action === 'rename-cat') { e.stopPropagation(); renameCategory(target.dataset.level, target.dataset.id); }
+        else if (action === 'delete-cat') { e.stopPropagation(); deleteCategory(target.dataset.level, target.dataset.id); }
+        else if (action === 'rename-store') renameStoreMaster(Number(target.dataset.idx));
+        else if (action === 'delete-store') deleteStoreMaster(Number(target.dataset.idx));
+        else if (action === 'rename-payment') renamePaymentMaster(Number(target.dataset.idx));
+        else if (action === 'delete-payment') deletePaymentMaster(Number(target.dataset.idx));
       });
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       loadState();
+      updateGeminiKeyStatusUI();
       setupDelegatedEvents();
       setupDragAndDrop();
       setTodayMonth();
