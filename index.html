@@ -339,6 +339,28 @@
                       <i class="fa-solid fa-rotate-right"></i> カメラで撮り直す
                     </button>
                   </div>
+                  <!-- 長いレシート用：複数枚（上半分・下半分など）キュー -->
+                  <div id="multi-receipt-queue-box" class="bg-indigo-50/70 border border-indigo-200/90 rounded-lg p-2 space-y-1.5">
+                    <div class="flex items-center justify-between gap-1.5">
+                      <span class="text-[11px] font-bold text-indigo-900">
+                        <i class="fa-solid fa-layer-group mr-1 text-indigo-600"></i>
+                        長いレシート分割ストック: <span id="queued-receipt-count">0</span>枚
+                      </span>
+                      <div class="flex items-center gap-1">
+                        <button type="button" onclick="addCurrentPreviewToQueueAndCamera()" class="px-2 py-1 bg-white hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded text-[10px] font-bold transition cursor-pointer">
+                          <i class="fa-solid fa-plus mr-0.5"></i>この画像を保存して次を撮る
+                        </button>
+                        <button type="button" id="clear-receipt-queue-btn" onclick="clearReceiptQueue()" class="hidden px-2 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded text-[10px] font-bold transition cursor-pointer">
+                          クリア
+                        </button>
+                      </div>
+                    </div>
+                    <div id="queued-receipt-thumbnails" class="hidden flex items-center gap-1.5 overflow-x-auto py-0.5"></div>
+                    <button type="button" id="analyze-queued-receipts-btn" onclick="analyzeQueuedReceiptsWithGemini()" class="hidden w-full py-1.5 px-2.5 bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-2xs transition cursor-pointer">
+                      <i class="fa-solid fa-wand-magic-sparkles"></i>
+                      <span>ストックした全画像（<span id="queued-analyze-count">0</span>枚）をまとめてAI解析</span>
+                    </button>
+                  </div>
                   <div class="flex items-center justify-between gap-2">
                     <button type="button" id="run-ai-ocr-btn" onclick="runGeminiReceiptAnalysis()" class="flex-1 py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer">
                       <i class="fa-solid fa-wand-magic-sparkles"></i>
@@ -570,15 +592,15 @@
             <div class="space-y-2">
               <label class="block text-xs font-bold text-slate-700">使用モデル（APIキーの契約ティアに合わせて選択）</label>
               <select id="gemini-model-select" onchange="onGeminiModelSelectChange()" class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-brand-500">
-                <option value="auto">自動選択（無料枠・有料枠を自動判定して接続 / おすすめ）</option>
+                <option value="auto">自動選択（最新モデル・無料枠を自動判定して接続 / おすすめ）</option>
+                <option value="gemini-3.8-flash">gemini-3.8-flash（最新推奨・高速）</option>
                 <option value="gemini-4-hydrogen">gemini-4-hydrogen（Gemini 4 軽量・高速）</option>
                 <option value="gemini-4-neon">gemini-4-neon（Gemini 4 バランス型）</option>
                 <option value="gemini-4-carbon">gemini-4-carbon（Gemini 4 高精度推論）</option>
                 <option value="gemini-3-flash-preview">gemini-3-flash-preview（Gemini 3 Flash）</option>
-                <option value="gemini-2.5-flash">gemini-2.5-flash（Gemini 2.5 Flash）</option>
                 <option value="custom">カスタムモデル名を直接入力...</option>
               </select>
-              <input type="text" id="gemini-custom-model-input" placeholder="例: gemini-4-hydrogen" class="hidden w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono focus:outline-none focus:border-brand-500">
+              <input type="text" id="gemini-custom-model-input" placeholder="例: gemini-3.8-flash" class="hidden w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono focus:outline-none focus:border-brand-500">
             </div>
             <div id="ai-test-result-box" class="hidden rounded-lg p-2.5 text-xs"></div>
             <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -622,9 +644,10 @@
     const GEMINI_MODEL_STORAGE = 'smart_kakeibo_gemini_model_v1';
     const DEFAULT_GEMINI_MODEL = 'auto';
     const FALLBACK_MODELS = [
+      'gemini-3.8-flash',
       'gemini-4-hydrogen',
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash'
+      'gemini-4-neon',
+      'gemini-3-flash-preview'
     ];
     const MAX_STRING_LEN = 120;
     const MAX_MEMO_LEN = 500;
@@ -834,7 +857,7 @@
     let cameraFacingMode = 'environment';
     let availableVideoDevices = [];
     let currentDeviceIndex = 0;
-
+    let receiptImageQueue = [];
     function sanitizeImportedState(raw) {
       if (!raw || typeof raw !== 'object') return null;
 
@@ -1834,32 +1857,241 @@
       if (errBox) errBox.classList.add('hidden');
     }
 
-    async function startReceiptCamera(specificDeviceId = null) {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast('お使いのブラウザはカメラ撮影に対応していません', 'error');
+    function renderReceiptQueueUI() {
+      const countEl = document.getElementById('queued-receipt-count');
+      const analyzeCountEl = document.getElementById('queued-analyze-count');
+      const analyzeBtn = document.getElementById('analyze-queued-receipts-btn');
+      const clearBtn = document.getElementById('clear-receipt-queue-btn');
+      const thumbsEl = document.getElementById('queued-receipt-thumbnails');
+      const n = receiptImageQueue.length;
+
+      if (countEl) countEl.textContent = String(n);
+      if (analyzeCountEl) analyzeCountEl.textContent = String(n);
+      if (analyzeBtn) analyzeBtn.classList.toggle('hidden', n === 0);
+      if (clearBtn) clearBtn.classList.toggle('hidden', n === 0);
+
+      if (thumbsEl) {
+        thumbsEl.classList.toggle('hidden', n === 0);
+        thumbsEl.innerHTML = receiptImageQueue
+          .map((item, idx) => `
+            <div class="relative w-11 h-14 rounded border border-indigo-300 bg-white overflow-hidden shrink-0">
+              <img src="${escapeAttr(item.dataUrl)}" alt="分割${idx + 1}" class="w-full h-full object-cover">
+              <span class="absolute bottom-0 inset-x-0 bg-slate-900/75 text-white text-[9px] font-bold text-center">${idx + 1}枚目</span>
+              <button type="button" data-action="remove-queued-img" data-idx="${idx}" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center" title="削除">×</button>
+            </div>
+          `)
+          .join('');
+      }
+    }
+
+    function addCurrentPreviewToQueueAndCamera() {
+      const imgEl = document.getElementById('receipt-preview-img');
+      if (!imgEl || !imgEl.src || imgEl.src.startsWith('data:,')) {
+        showToast('先にレシート画像を選択または撮影してください', 'warning');
         return;
       }
+      if (receiptImageQueue.length >= 6) {
+        showToast('一度にまとめられる分割画像は最大6枚までです', 'warning');
+        return;
+      }
+      receiptImageQueue.push({ id: uid('qimg'), dataUrl: imgEl.src });
+      renderReceiptQueueUI();
+      clearReceiptImage();
+      showToast(`${receiptImageQueue.length}枚目をストックしました。次の部分を撮影してください。`, 'info');
+      startReceiptCamera();
+    }
+
+    function removeQueuedReceiptImage(idx) {
+      if (idx < 0 || idx >= receiptImageQueue.length) return;
+      receiptImageQueue.splice(idx, 1);
+      renderReceiptQueueUI();
+      showToast('ストック画像を1枚削除しました', 'info');
+    }
+
+    function clearReceiptQueue() {
+      receiptImageQueue = [];
+      renderReceiptQueueUI();
+      showToast('分割ストックをクリアしました', 'info');
+    }
+
+    async function startReceiptCamera(deviceId = null) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('このブラウザまたは環境ではカメラ起動がサポートされていません（HTTPSまたはlocalhost環境が必要です）', 'error');
+        return;
+      }
+
       stopReceiptCamera();
+      const boxEl = document.getElementById('camera-capture-box');
+      const videoEl = document.getElementById('camera-video');
+      const switchBtn = document.getElementById('switch-camera-btn');
 
       try {
-        const videoConstraints = specificDeviceId
-          ? { deviceId: { exact: specificDeviceId } }
-          : { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 960 } };
+        const constraints = deviceId
+          ? { video: { deviceId: { exact: deviceId } }, audio: false }
+          : { video: { facingMode: { ideal: cameraFacingMode }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false };
 
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
-        const videoEl = document.getElementById('camera-video');
-        const boxEl = document.getElementById('camera-capture-box');
-        if (videoEl && boxEl) {
+        cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (videoEl) {
           videoEl.srcObject = cameraStream;
-          boxEl.classList.remove('hidden');
+          await videoEl.play().catch(() => {});
+        }
+        if (boxEl) boxEl.classList.remove('hidden');
+
+        if (navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          availableVideoDevices = devices.filter((d) => d.kind === 'videoinput');
+          if (switchBtn) switchBtn.classList.toggle('hidden', availableVideoDevices.length <= 1);
+        }
+      } catch (err) {
+        console.error('カメラ起動エラー:', err);
+        showToast('カメラを起動できませんでした。ブラウザのカメラ権限をご確認ください。', 'error');
+      }
+    }
+
+    function applyParsedReceiptResultToForm(parsed, usedModel, appendMode = false) {
+      const validDate = sanitizeDate(parsed.date);
+      if (validDate) document.getElementById('form-date').value = validDate;
+
+      const cleanStore = sanitizeText(parsed.store, 80);
+      if (cleanStore) document.getElementById('form-store').value = cleanStore;
+
+      if (parsed.payment) {
+        const matchedPay = appState.payments.find((p) => parsed.payment.includes(p) || p.includes(parsed.payment));
+        if (matchedPay) document.getElementById('form-payment').value = matchedPay;
+      }
+
+      const items = Array.isArray(parsed.items) ? parsed.items : [];
+      if (items.length === 0) {
+        if (!appendMode) showToast('AIで商品明細を検出できませんでした', 'warning');
+        return 0;
+      }
+
+      const container = document.getElementById('item-rows-container');
+      if (!appendMode) {
+        container.innerHTML = '';
+      } else if (container.children.length === 1) {
+        const firstName = (container.children[0].querySelector('input[data-field="name"]')?.value || '').trim();
+        const firstPrice = Number(container.children[0].querySelector('input[data-field="price"]')?.value || 0);
+        if (!firstName && (!firstPrice || firstPrice === 0)) {
+          container.innerHTML = '';
+        }
+      }
+
+      for (const itm of items) {
+        addItemRow({
+          name: sanitizeText(itm.name, 100, '商品'),
+          price: sanitizePositiveInt(itm.price, 0),
+          majorId: itm.majorId,
+          mediumId: itm.mediumId,
+          minorId: itm.minorId
+        });
+      }
+      updateFormTotal();
+      return items.length;
+    }
+
+    async function analyzeQueuedReceiptsWithGemini() {
+      if (receiptImageQueue.length === 0) {
+        showToast('ストックされた画像がありません', 'warning');
+        return;
+      }
+      const apiKey = getGeminiApiKey();
+      if (!apiKey) {
+        showToast('先に「AI設定」からGemini APIキーを登録してください', 'warning');
+        return;
+      }
+
+      const qBtn = document.getElementById('analyze-queued-receipts-btn');
+      const progBox = document.getElementById('ocr-progress-box');
+      const statusEl = document.getElementById('ocr-status-text');
+      const pctEl = document.getElementById('ocr-percent-text');
+      const barEl = document.getElementById('ocr-progress-bar');
+      const errBox = document.getElementById('ai-error-detail-box');
+      if (errBox) errBox.classList.add('hidden');
+
+      try {
+        if (qBtn) qBtn.disabled = true;
+        if (progBox) progBox.classList.remove('hidden');
+        if (statusEl) statusEl.textContent = `${receiptImageQueue.length}枚の分割レシートをAIで統合解析中...`;
+        if (pctEl) pctEl.textContent = '45%';
+        if (barEl) barEl.style.width = '45%';
+
+        const imageParts = [];
+        for (const qItem of receiptImageQueue) {
+          const tempImg = new Image();
+          await new Promise((resolve, reject) => {
+            tempImg.onload = resolve;
+            tempImg.onerror = reject;
+            tempImg.src = qItem.dataUrl;
+          });
+          const canvas = buildEnhancedCanvasFromImage(tempImg, false);
+          const base64Data = canvas.toDataURL('image/jpeg', 0.88).split(',')[1];
+          imageParts.push({ inlineData: { mimeType: 'image/jpeg', data: base64Data } });
         }
 
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        availableVideoDevices = devices.filter((d) => d.kind === 'videoinput');
-        const switchBtn = document.getElementById('switch-camera-btn');
-        if (switchBtn) switchBtn.classList.toggle('hidden', availableVideoDevices.length <= 1);
+        const categoryListText = buildCategoryHierarchyPromptText();
+        const promptText = `あなたは日本の家計簿アシスタントです。添付された複数枚の画像は、1枚の長いレシートを上から下へ分割撮影したものです（重なり部分がある場合は重複商品を除いて統合してください）。
+全画像を通して購入日・購入先店舗名・支払方法（読み取れる場合）・購入商品リストを漏れなく抽出し、各商品について以下のカテゴリー一覧から最も適切な majorId, mediumId, minorId を選択してください。割引・値引行がある場合は実支払額ベースで整理し、小計・合計・消費税合計欄・お釣りは商品リストに含めないでください。
+
+【利用可能なカテゴリー一覧】
+${categoryListText}`;
+
+        const payload = {
+          contents: [{ role: 'user', parts: [{ text: promptText }, ...imageParts] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                date: { type: 'STRING', description: 'YYYY-MM-DD形式の購入日。不明な場合は空文字' },
+                store: { type: 'STRING', description: '店舗名・購入先' },
+                payment: { type: 'STRING', description: '支払方法。不明なら空文字' },
+                items: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      name: { type: 'STRING' },
+                      price: { type: 'INTEGER' },
+                      majorId: { type: 'STRING' },
+                      mediumId: { type: 'STRING' },
+                      minorId: { type: 'STRING' }
+                    },
+                    required: ['name', 'price', 'majorId', 'mediumId', 'minorId']
+                  }
+                }
+              },
+              required: ['date', 'store', 'items']
+            }
+          }
+        };
+
+        const preferredModel = getGeminiModel();
+        const { data: result, usedModel } = await callGeminiWithFallback(apiKey, payload, preferredModel);
+        const rawText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) throw new Error('AIから有効な応答テキストが返りませんでした');
+
+        const cleanedJson = rawText.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+        const parsed = JSON.parse(cleanedJson);
+
+        if (pctEl) pctEl.textContent = '100%';
+        if (barEl) barEl.style.width = '100%';
+        if (statusEl) statusEl.textContent = `分割統合AI解析完了 (${usedModel})`;
+
+        const addedCount = applyParsedReceiptResultToForm(parsed, usedModel, false);
+        receiptImageQueue = [];
+        renderReceiptQueueUI();
+        showToast(`分割レシートから${addedCount}点の商品を統合解析・自動分類しました`, 'success');
       } catch (err) {
-        showToast('カメラを起動できませんでした。権限や接続を確認してください。', 'error');
+        console.error('分割レシートAI解析エラー:', err);
+        if (progBox) progBox.classList.add('hidden');
+        if (errBox) {
+          errBox.textContent = `詳細エラー: ${err.message}`;
+          errBox.classList.remove('hidden');
+        }
+        showToast('分割レシートのAI解析に失敗しました。詳細エラーを確認してください。', 'error');
+      } finally {
+        if (qBtn) qBtn.disabled = false;
       }
     }
 
@@ -2278,19 +2510,11 @@ ${categoryListText}`;
           return;
         }
 
-        const container = document.getElementById('item-rows-container');
-        container.innerHTML = '';
-        for (const itm of items) {
-          addItemRow({
-            name: sanitizeText(itm.name, 100, '商品'),
-            price: sanitizePositiveInt(itm.price, 0),
-            majorId: itm.majorId,
-            mediumId: itm.mediumId,
-            minorId: itm.minorId
-          });
-        }
-        updateFormTotal();
-        showToast(`Gemini AI (${usedModel}) が${items.length}点の商品を解析・自動分類しました`, 'success');
+        const hasExistingItems =
+          document.getElementById('item-rows-container').children.length > 1 ||
+          Boolean((document.getElementById('item-rows-container').children[0]?.querySelector('input[data-field="name"]')?.value || '').trim());
+        const addedCount = applyParsedReceiptResultToForm(parsed, usedModel, hasExistingItems);
+        showToast(`Gemini AI (${usedModel}) が${addedCount}点の商品を解析・反映しました`, 'success');
       } catch (err) {
         console.error('Gemini解析エラー:', err);
         if (progBox) progBox.classList.add('hidden');
@@ -2861,6 +3085,7 @@ ${categoryListText}`;
         else if (action === 'edit-receipt') editReceipt(target.dataset.id);
         else if (action === 'delete-receipt') deleteReceipt(target.dataset.id);
         else if (action === 'remove-row') removeItemRow(target.dataset.rowId);
+        else if (action === 'remove-queued-img') { e.stopPropagation(); removeQueuedReceiptImage(Number(target.dataset.idx)); }
         else if (action === 'select-major') selectMasterMajor(target.dataset.id);
         else if (action === 'select-medium') selectMasterMedium(target.dataset.id);
         else if (action === 'rename-cat') { e.stopPropagation(); renameCategory(target.dataset.level, target.dataset.id); }
